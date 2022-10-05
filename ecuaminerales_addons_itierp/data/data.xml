@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="production_work_hour_sequence" model="ir.sequence">
+            <field name="name">HORAS PRODUCCIÓN</field>
+            <field name="code">production.work.hour.sequence</field>
+            <field name="prefix">PROD/CAL/%(year)s/</field>
+            <field name="padding">6</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+    </data>
+</openerp>

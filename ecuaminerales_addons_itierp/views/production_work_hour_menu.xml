@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<odoo>
+    <!-- MENÚ PRINCIPAL -->
+    <menuitem name="HORAS PRODUCCIÓN" id="men_pri_mod"
+              web_icon="ecuaminerales_addons_itierp,static/description/icon.png"/>
+</odoo>

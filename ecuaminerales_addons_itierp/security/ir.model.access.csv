@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_production_work_hour,production.work.hour,model_production_work_hour,base.group_user,1,1,1,1
+access_production_work_hour_employee,production.work.hour.employee,model_production_work_hour_employee,base.group_user,1,1,1,1
