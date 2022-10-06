@@ -36,14 +36,20 @@
                         </group>
                     </group>
                     <notebook>
-                        <page name="Datos Relog">
+                        <page string="Datos Relog">
+                            <div class="alert alert-info" role="alert" style="margin-bottom:0px;"
+                                 attrs="{'invisible': [('message','=',False)]}">
+                                <h5 class="text-center">
+                                    <field name="message" readonly="1"/>
+                                </h5>
+                            </div>
                             <field name="hour_production_ids" nolabel="1">
                                 <tree create="0" editable="bottom">
                                     <field name="employee_id"/>
                                     <field name="codigo_clock"/>
+                                    <field name="departamento"/>
                                     <field name="fecha_time"/>
                                     <field name="hour"/>
-                                    <field name="departamento"/>
                                     <field name="dispositivo"/>
                                     <field name="delete" widget="toggle_button"/>
                                 </tree>
