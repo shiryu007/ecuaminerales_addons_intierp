@@ -93,3 +93,22 @@ class ProductionWorkHour(models.Model):
         fecha = datetime.strptime(str(date_time_str), '%m/%d/%Y %H:%M:%S')
         fecha = fecha + timedelta(hours=5)
         return fecha
+
+    def purge_data(self):
+        if not self.hour_production_ids:
+            return True
+        for employee_id in set(self.hour_production_ids.mapped('employee_id')):
+            list_hours = self.hour_production_ids.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            count = 1
+            for ahora in list_hours[1:]:
+                antes = list_hours[count - 1]
+                antes.delete = False
+                ahora.delete = False
+                diferencia = (antes.fecha_time - ahora.fecha_time)
+                minutes = abs(diferencia.total_seconds() / 60)
+                antes.dif = minutes
+                ahora.dif = minutes
+                if ahora.dif < 1 and abs(diferencia.days) == 0:
+                    antes.delete = True
+                    ahora.delete = True
+                count += 1
