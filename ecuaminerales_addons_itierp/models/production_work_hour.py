@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, date
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
@@ -37,6 +37,8 @@ class ProductionWorkHour(models.Model):
         wb = xlrd.open_workbook(file_contents=base64.decodestring(self.document))
         sheet = wb.sheets()[0] if wb.sheets() else None
         data = [[sheet.cell_value(r, c) for c in range(sheet.ncols)] for r in range(sheet.nrows)]
+        if data[0] == ['', '', '', '', '', '']:
+            data.remove(data[0])
         if data[0] != ['Nombre', 'Número de empleado', 'Departamento', 'Fecha', 'Hora', 'Dispositivo']:
             raise ValidationError("""Recurde que el archivo debe contener la siguiente estructura  \n
             ['Nombre', 'Número de empleado', 'Departamento', 'Fecha', 'Hora', 'Dispositivo']""")
@@ -89,4 +91,5 @@ class ProductionWorkHour(models.Model):
     def conv_date_hout(self, date, time):
         date_time_str = date + " " + time + ':00'
         fecha = datetime.strptime(str(date_time_str), '%m/%d/%Y %H:%M:%S')
+        fecha = fecha + timedelta(hours=5)
         return fecha

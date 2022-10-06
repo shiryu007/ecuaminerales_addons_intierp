@@ -44,7 +44,7 @@
                                 </h5>
                             </div>
                             <field name="hour_production_ids" nolabel="1">
-                                <tree create="0" editable="bottom">
+                                <tree create="0" editable="bottom" default_order="fecha_time">
                                     <field name="employee_id"/>
                                     <field name="codigo_clock"/>
                                     <field name="departamento"/>
