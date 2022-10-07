@@ -17,11 +17,16 @@
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
+                        <button type="object" name="view_registro_horas" class="oe_stat_button bg-info"
+                                icon="fa-clock-o"
+                                attrs="{'invisible': [('register_count', '=', 0)]}" groups="base.group_user">
+                            <field name="register_count" widget="statinfo" string="MARCACIONES"/>
+                        </button>
                         <button type="object" icon="fa-long-arrow-up" name="load_information_of_file"
-                                string="CARGAR HORAS" states="draft"
+                                string="CARGAR HORAS" states="draft,load"
                                 class="btn btn-primary"/>
-                        <button type="object" icon="fa-arrow-circle-o-left" name="purge_data"
-                                string="CARGAR HORAS" states="draft"
+                        <button type="object" icon="fa-dedent" name="delete_duplicates"
+                                string="DEPURAR DATOS" states="load"
                                 class="btn btn-primary"/>
                     </div>
                     <div class="oe_title">
@@ -46,32 +51,10 @@
                                     <field name="message" readonly="1"/>
                                 </h5>
                             </div>
-                            <field name="hour_production_ids" nolabel="1">
-                                <tree create="0" editable="bottom" default_order="delete desc"
-                                      context="{'group_by': 'employee_id'}">
-                                    <field name="employee_id"/>
-                                    <field name="codigo_clock"/>
-                                    <field name="departamento"/>
-                                    <field name="fecha_time"/>
-                                    <field name="hour" widget="float_time"/>
-                                    <field name="dispositivo"/>
-                                    <field name="dif"/>
-                                    <field name="type_mar"/>
-                                    <field name="delete"/>
-                                </tree>
-                            </field>
+                            <field name="hour_production_ids" nolabel="1"/>
                         </page>
                         <page string="Filtrar Información">
-                            <group>
-                                <group>
-                                    <field name="employee_search"/>
-                                </group>
-                                <group>
-
-                                </group>
-                            </group>
                         </page>
-
                     </notebook>
                 </sheet>
             </form>

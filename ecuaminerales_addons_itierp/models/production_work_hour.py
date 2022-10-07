@@ -29,7 +29,21 @@ class ProductionWorkHour(models.Model):
                                         track_visibility='onchange')
     hour_production_ids = fields.One2many('production.work.hour.employee', 'production_work_hour', 'Lista de Horas')
     message = fields.Html("Mensaje de Error")
+    register_count = fields.Integer('Numero de Registros', compute='_compute_count_registers')
     employee_search = fields.Many2one('hr.employee', 'Empleado')
+
+    def _compute_count_registers(self):
+        self.register_count = len(self.hour_production_ids)
+
+    def view_registro_horas(self):
+        self.ensure_one()
+        return {
+            'name': 'Registro de Horas',
+            'type': 'ir.actions.act_window',
+            'view_mode': 'tree,form',
+            'res_model': 'production.work.hour.employee',
+            'domain': [('id', 'in', self.hour_production_ids.ids)],
+        }
 
     @api.model
     def create(self, vals):
@@ -71,6 +85,8 @@ class ProductionWorkHour(models.Model):
                                            'dispositivo': line[5]}))
         self.hour_production_ids = data_create
         self.insert_messages(name_not_range, names_no_search)
+        self.purge_data()
+        self.state = 'load'
 
     def insert_messages(self, name_not_range, names_no_search):
         self.message = False
@@ -110,9 +126,11 @@ class ProductionWorkHour(models.Model):
                 antes = list_hours[count - 1]
                 diferencia = ahora.fecha_time - antes.fecha_time
                 minutes = abs(diferencia.seconds / 60)
-                antes.dif = minutes
+                ahora.dif = minutes
                 if minutes < MINUTOS_DUPLICADO and abs(diferencia.days) == 0:
                     ahora.delete = True
                 count += 1
-                if minutes < MINUTOS_TRABAJO and ahora.dif > 60:
-                    ahora.type_mar = 'exit'
+
+    def delete_duplicates(self):
+        self.hour_production_ids = self.hour_production_ids.filtered(lambda x: not x.delete)
+        self.purge_data()

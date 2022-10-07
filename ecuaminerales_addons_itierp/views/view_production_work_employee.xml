@@ -6,7 +6,8 @@
         <field name="model">production.work.hour.employee</field>
         <field name="type">tree</field>
         <field name="arch" type="xml">
-            <tree string="bodega" editable="top">
+            <tree string="bodega" editable="top" delete="1" decoration-danger="delete == True">
+                <field name="id"/>
                 <field name="employee_id"/>
                 <field name="codigo_clock"/>
                 <field name="departamento"/>
