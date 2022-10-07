@@ -18,6 +18,7 @@
     "data": [
         'security/ir.model.access.csv',
         'data/data.xml',
+        'data/resource_data.xml',
         'views/production_work_hour_menu.xml',
         'views/hr_employee_view.xml',
         'views/view_production_work_hour.xml',

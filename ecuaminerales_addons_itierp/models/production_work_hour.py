@@ -6,7 +6,7 @@ import base64
 import xlrd
 
 # NUMERO MINUTOS DIFERENCIA
-MINUTOS_DUPLICADO = 5
+MINUTOS_DUPLICADO = 6
 MINUTOS_TRABAJO = (8 * 60) + (2 * 60)
 
 
@@ -125,8 +125,9 @@ class ProductionWorkHour(models.Model):
             for ahora in list_hours[1:]:
                 antes = list_hours[count - 1]
                 diferencia = ahora.fecha_time - antes.fecha_time
-                minutes = abs(diferencia.seconds / 60)
+                minutes = abs(diferencia.total_seconds() / 60)
                 ahora.dif = minutes
+                ahora.dif_h = minutes / 60
                 if minutes < MINUTOS_DUPLICADO and abs(diferencia.days) == 0:
                     ahora.delete = True
                 count += 1

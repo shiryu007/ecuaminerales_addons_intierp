@@ -3,4 +3,25 @@
     <!-- MENÚ PRINCIPAL -->
     <menuitem name="HORAS PRODUCCIÓN" id="men_pri_mod"
               web_icon="ecuaminerales_addons_itierp,static/description/icon.png"/>
+
+    <!-- MENÚ CONFIGURACIO -->
+    <menuitem name="CONFIGURACIÓN" id="men_pri_conf"
+              parent="men_pri_mod"/>
+
+    <record id="action_resource_calendar_work_hr" model="ir.actions.act_window">
+        <field name="name">Jornada de Trabajo</field>
+        <field name="res_model">resource.calendar</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="resource.view_resource_calendar_search"/>
+        <field name="help" type="html">
+            <p class="oe_view_nocontent_create">
+                Define la jornada de trabajo para los empleados.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_resource_hr_ec" action="action_resource_calendar_work_hr"
+              name="Jornada de Trabajo" parent="men_pri_conf" sequence="5"/>
+
 </odoo>
