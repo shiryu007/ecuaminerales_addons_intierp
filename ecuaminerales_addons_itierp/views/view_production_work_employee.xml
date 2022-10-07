@@ -16,6 +16,7 @@
                 <field name="dif"/>
                 <field name="type_mar"/>
                 <field name="delete"/>
+                <field name="production_work_hour"/>
             </tree>
         </field>
     </record>
@@ -30,10 +31,12 @@
                 <field name="fecha_time"/>
                 <separator/>
                 <filter name="this_month" string="Fecha" date="fecha_time"/>
-                <filter name="deleter_f" string="Eliminar" date="delete"/>
+                <filter name="delete_f" string="Eliminar" domain="[('delete', '=', True)]"/>
                 <group expand="0" string="Group By">
                     <filter string="Empleado" name="employee_id_g" domain="[]" context="{'group_by':'employee_id'}"/>
                     <filter string="Fecha" name="fecha_time_g" domain="[]" context="{'group_by':'fecha_time'}"/>
+                    <filter string="Dato Marcación" name="production_work_hour_g" domain="[]"
+                            context="{'group_by':'production_work_hour'}"/>
                 </group>
             </search>
         </field>
