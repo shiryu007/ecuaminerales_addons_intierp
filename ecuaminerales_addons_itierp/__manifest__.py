@@ -20,7 +20,8 @@
         'data/data.xml',
         'views/production_work_hour_menu.xml',
         'views/hr_employee_view.xml',
-        'views/view_production_work_hour.xml'
+        'views/view_production_work_hour.xml',
+        'views/view_production_work_employee.xml'
     ],
     'js': ['static/src/js/ecuaminerales_addons_itierp.js'],
     'css': ['static/src/css/ecuaminerales_addons_itierp.scss']

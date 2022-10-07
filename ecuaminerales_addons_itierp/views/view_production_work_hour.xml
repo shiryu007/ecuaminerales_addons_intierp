@@ -6,7 +6,7 @@
 
 
     <!-- VISTA FORM: Modelo -->
-    <record model="ir.ui.view" id="view_act_bodega_form">
+    <record model="ir.ui.view" id="view_production_work_hour_form">
         <field name="name">view.production.work.hour.form</field>
         <field name="model">production.work.hour</field>
         <field name="type">form</field>
@@ -47,7 +47,8 @@
                                 </h5>
                             </div>
                             <field name="hour_production_ids" nolabel="1">
-                                <tree create="0" editable="bottom" default_order="fecha_time, employee_id">
+                                <tree create="0" editable="bottom" default_order="delete desc"
+                                      context="{'group_by': 'employee_id'}">
                                     <field name="employee_id"/>
                                     <field name="codigo_clock"/>
                                     <field name="departamento"/>
@@ -55,9 +56,20 @@
                                     <field name="hour" widget="float_time"/>
                                     <field name="dispositivo"/>
                                     <field name="dif"/>
-                                    <field name="delete" widget="toggle_button"/>
+                                    <field name="type_mar"/>
+                                    <field name="delete"/>
                                 </tree>
                             </field>
+                        </page>
+                        <page string="Filtrar Información">
+                            <group>
+                                <group>
+                                    <field name="employee_search"/>
+                                </group>
+                                <group>
+
+                                </group>
+                            </group>
                         </page>
 
                     </notebook>
@@ -68,7 +80,7 @@
     <!-- FIN VISTA FORM: MODELO -->
 
     <!-- VISTA TREE: MODELO -->
-    <record model="ir.ui.view" id="view_act_bodega_tree">
+    <record model="ir.ui.view" id="view_production_work_hour_tree">
         <field name="name">view.production.work.hour.tree</field>
         <field name="model">production.work.hour</field>
         <field name="type">tree</field>

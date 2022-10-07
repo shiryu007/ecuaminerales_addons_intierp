@@ -1,3 +1,5 @@
+from email.policy import default
+
 from odoo import api, fields, models
 from odoo.addons.ecuaminerales_addons_itierp.models import production_work_hour
 from odoo.exceptions import ValidationError
@@ -16,3 +18,5 @@ class ProductionWorkHourEmployee(models.Model):
     delete = fields.Boolean("Se Eliminara", store=True)
     dif = fields.Float("Diferencia en minutos", store=True)
     production_work_hour = fields.Many2one("production.work.hour", "Horas de Producción", store=True)
+    type_mar = fields.Selection([('income', 'Ingreso'), ('exit', 'Salida'), ('error', 'Error')], default="error",
+                                string="Tipo")
