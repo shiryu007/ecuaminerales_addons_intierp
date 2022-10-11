@@ -19,9 +19,20 @@ class ProductionWorkHourEmployee(models.Model):
     departamento = fields.Char("Departamento", store=True)
     dispositivo = fields.Char("Dispositivo", store=True)
     delete = fields.Boolean("Se Eliminara", store=True)
-    dif = fields.Float("Diferencia en minutos", store=True)
+    dif = fields.Float("Diferencia en minutos", store=True, digits=(2, 6))
     dif_h = fields.Float("Diferencia en horas", store=True)
     production_work_hour = fields.Many2one("production.work.hour", "Horas de Producción", store=True,
                                            ondelete="cascade")
-    type_mar = fields.Selection([('income', 'Ingreso'), ('exit', 'Salida'), ('error', 'Error')], default="error",
+    type_mar = fields.Selection([('income', 'Ingreso'),
+                                 ('exit', 'Salida'),
+                                 ('error', 'Error')], default="error",
                                 string="Tipo")
+    turno = fields.Selection([('t1', 'Turno 1'),
+                              ('t2', 'Turno 2'),
+                              ('t3', 'Turno 3'),
+                              ('t1f', 'Turno 1 F'),
+                              ('t2f', 'Turno 2 F'),
+                              ('t3f', 'Turno 3 F'),
+                              ('tt2', 'Turno Doble'),
+                              ('no', 'SIN TURNO')], default="no",
+                             string="Tipo")

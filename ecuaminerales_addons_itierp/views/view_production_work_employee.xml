@@ -6,7 +6,8 @@
         <field name="model">production.work.hour.employee</field>
         <field name="type">tree</field>
         <field name="arch" type="xml">
-            <tree string="bodega" editable="top" delete="1" decoration-danger="delete == True">
+            <tree string="bodega" editable="top" delete="1" decoration-danger="delete == True"
+                  default_order="fecha_time">
                 <field name="id"/>
                 <field name="employee_id"/>
                 <field name="codigo_clock"/>
@@ -15,6 +16,7 @@
                 <field name="fecha_time"/>
                 <field name="hour" widget="float_time"/>
                 <field name="dispositivo"/>
+                <field name="turno"/>
                 <field name="dif"/>
                 <field name="dif_h"/>
                 <field name="type_mar"/>
@@ -38,8 +40,12 @@
                 <group expand="0" string="Group By">
                     <filter string="Empleado" name="employee_id_g" domain="[]" context="{'group_by':'employee_id'}"/>
                     <filter string="Fecha" name="fecha_time_g" domain="[]" context="{'group_by':'fecha_time'}"/>
+                    <filter string="Tipo" name="type_mar_g" domain="[]" context="{'group_by':'type_mar'}"/>
+                    <filter string="Turno" name="turno_g" domain="[]" context="{'group_by':'turno'}"/>
                     <filter string="Dato Marcación" name="production_work_hour_g" domain="[]"
                             context="{'group_by':'production_work_hour'}"/>
+                    <filter string="Jornada de Trabajo" name="resource_calendar_id_g" domain="[]"
+                            context="{'group_by':'resource_calendar_id'}"/>
                 </group>
             </search>
         </field>

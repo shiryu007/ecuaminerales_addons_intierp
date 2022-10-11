@@ -4,6 +4,7 @@ from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 import base64
 import xlrd
+import calendar
 
 # NUMERO MINUTOS DIFERENCIA
 MINUTOS_DUPLICADO = 6
@@ -118,7 +119,7 @@ class ProductionWorkHour(models.Model):
     def purge_data(self):
         if not self.hour_production_ids:
             return True
-        self.hour_production_ids.write({'delete': False, 'type_mar': 'error', 'dif': 0})
+        self.hour_production_ids.write({'delete': False, 'type_mar': 'error', 'dif': 0, 'turno': 'no'})
         for employee_id in set(self.hour_production_ids.mapped('employee_id')):
             list_hours = self.hour_production_ids.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
             count = 1
@@ -128,9 +129,81 @@ class ProductionWorkHour(models.Model):
                 minutes = abs(diferencia.total_seconds() / 60)
                 ahora.dif = minutes
                 ahora.dif_h = minutes / 60
-                if minutes < MINUTOS_DUPLICADO and abs(diferencia.days) == 0:
+                if minutes < MINUTOS_DUPLICADO:
                     ahora.delete = True
+                else:
+                    self.detectar_ingreso_salida(antes, ahora, minutes)
+
                 count += 1
+
+    def detectar_ingreso_salida(self, antes, ahora, minutes):
+        # TURNO ROTATIVOS
+        sales_journal_id = self.env.ref('ecuaminerales_addons_itierp.resource_rotativos')
+        if ahora.resource_calendar_id == sales_journal_id:
+            # VALIDAR HORARIOS
+            # 	             |      TURNO 1	   | TURNO 2	        | TURNO 3
+            # LUNES-VIERNES	 | 06H00 - 14H00   |	14H00 - 22H00	| 22H00 - 06H00
+            # SÁBADO	     |06H00 - 18H00	   |    LIBRE	        | 18H00 - 06H00
+            # DOMINGO	     |06H00 - 18H00    |	18H00 - 06H00	| LIBRE
+            f_antes = antes.fecha_time - timedelta(hours=5)
+            f_ahora = ahora.fecha_time - timedelta(hours=5)
+            if f_antes.day == 26:
+                print("To ca ver que pasa aca")
+            if antes.turno != 'no':
+                return True
+            if f_antes.weekday() in [calendar.MONDAY, calendar.TUESDAY, calendar.WEDNESDAY, calendar.THURSDAY,
+                                     calendar.FRIDAY]:
+                if (minutes / 60) > 14:
+                    print("Se olvido de marcar")
+                    return True
+                if 5 <= f_antes.hour <= 7 and f_ahora.hour <= 18:
+                    antes.type_mar = 'income'
+                    ahora.type_mar = 'exit'
+                    antes.turno = 't1'
+                    ahora.turno = 't1'
+                    return True
+                if 13 <= f_antes.hour <= 15 and f_ahora.hour <= 24 or 13 <= f_antes.hour <= 15 and f_ahora.hour <= 2:
+                    antes.type_mar = 'income'
+                    ahora.type_mar = 'exit'
+                    antes.turno = 't2'
+                    ahora.turno = 't2'
+                    return True
+                if 21 <= f_antes.hour <= 23 and f_ahora.hour <= 8:
+                    antes.type_mar = 'income'
+                    ahora.type_mar = 'exit'
+                    antes.turno = 't3'
+                    ahora.turno = 't3'
+                    return True
+                if 9 <= f_antes.hour <= 11 and f_ahora.hour <= 23:
+                    antes.type_mar = 'income'
+                    ahora.type_mar = 'exit'
+                    antes.turno = 'tt2'
+                    ahora.turno = 'tt2'
+                    return True
+
+            if f_antes.weekday() in [calendar.SATURDAY, calendar.SUNDAY]:
+                if 5 <= f_antes.hour <= 7 and f_ahora.hour <= 20:
+                    antes.type_mar = 'income'
+                    ahora.type_mar = 'exit'
+                    antes.turno = 't1f'
+                    ahora.turno = 't1f'
+                    return True
+
+            if f_antes.weekday() in [calendar.SATURDAY]:
+                if 15 <= f_antes.hour <= 19 and f_ahora.hour <= 8:
+                    antes.type_mar = 'income'
+                    ahora.type_mar = 'exit'
+                    antes.turno = 't2f'
+                    ahora.turno = 't2f'
+                    return True
+            if f_antes.weekday() in [calendar.SUNDAY]:
+                if 15 <= f_antes.hour <= 19 and f_ahora.hour <= 8:
+                    antes.type_mar = 'income'
+                    ahora.type_mar = 'exit'
+                    antes.turno = 't3f'
+                    ahora.turno = 't3f'
+                    return True
+            print("Toca ver por que llegas hasta aca....")
 
     def delete_duplicates(self):
         self.hour_production_ids = self.hour_production_ids.filtered(lambda x: not x.delete)
