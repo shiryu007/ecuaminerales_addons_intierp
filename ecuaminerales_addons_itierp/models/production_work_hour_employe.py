@@ -25,6 +25,7 @@ class ProductionWorkHourEmployee(models.Model):
                                            ondelete="cascade")
     type_mar = fields.Selection([('income', 'Ingreso'),
                                  ('exit', 'Salida'),
+                                 ('old', 'Olvido'),
                                  ('error', 'Error')], default="error",
                                 string="Tipo")
     turno = fields.Selection([('t1', 'Turno 1'),

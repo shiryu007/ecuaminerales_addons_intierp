@@ -7,7 +7,7 @@ import xlrd
 import calendar
 
 # NUMERO MINUTOS DIFERENCIA
-MINUTOS_DUPLICADO = 6
+MINUTOS_DUPLICADO = 7
 MINUTOS_TRABAJO = (8 * 60) + (2 * 60)
 
 
@@ -131,9 +131,13 @@ class ProductionWorkHour(models.Model):
                 ahora.dif_h = minutes / 60
                 if minutes < MINUTOS_DUPLICADO:
                     ahora.delete = True
+                    ahora.type_mar = antes.type_mar
+                    ahora.turno = antes.turno
+                    if ahora.type_mar == 'exit':
+                        antes.delete = True
+                        ahora.delete = False
                 else:
                     self.detectar_ingreso_salida(antes, ahora, minutes)
-
                 count += 1
 
     def detectar_ingreso_salida(self, antes, ahora, minutes):
@@ -154,7 +158,7 @@ class ProductionWorkHour(models.Model):
             if f_antes.weekday() in [calendar.MONDAY, calendar.TUESDAY, calendar.WEDNESDAY, calendar.THURSDAY,
                                      calendar.FRIDAY]:
                 if (minutes / 60) > 14:
-                    print("Se olvido de marcar")
+                    antes.type_mar = 'old'
                     return True
                 if 5 <= f_antes.hour <= 7 and f_ahora.hour <= 18:
                     antes.type_mar = 'income'
