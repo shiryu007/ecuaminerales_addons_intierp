@@ -11,6 +11,9 @@ class ProductionWorkHourEmployee(models.Model):
 
     employee_id = fields.Many2one('hr.employee', string='Empleado')
     codigo_clock = fields.Integer("Código Relog", store=True, related='employee_id.codigo_clock', editable=True)
+    resource_calendar_id = fields.Many2one('resource.calendar', 'Jornada de Trabajo', store=True,
+                                           related='employee_id.resource_calendar_id')
+
     fecha_time = fields.Datetime("Marcación", store=True)
     hour = fields.Float("Hora", store=True)
     departamento = fields.Char("Departamento", store=True)

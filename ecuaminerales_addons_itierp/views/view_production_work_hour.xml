@@ -47,7 +47,7 @@
                         <page string="Datos Relog">
                             <div class="alert alert-info" role="alert" style="margin-bottom:0px;"
                                  attrs="{'invisible': [('message','=',False)]}">
-                                <h5 class="text-center">
+                                <h5 class="text-center" >
                                     <field name="message" readonly="1"/>
                                 </h5>
                             </div>

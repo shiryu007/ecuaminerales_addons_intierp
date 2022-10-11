@@ -2,7 +2,45 @@
 <odoo>
     <data noupdate="1">
         <record id="resource_ocho_horas_1_almuerzo" model="resource.calendar">
-            <field name="name">8 HORAS - 1 ALMUERZO</field>
+            <field name="name">8H00-17H00</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="hours_per_day">8</field>
+            <field name="attendance_ids"
+                   eval="[
+                (0, 0, {'name': 'Lunes Mañana', 'dayofweek': '0', 'hour_from': 8, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Lunes Tarde', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 17, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Martes Mañana', 'dayofweek': '1', 'hour_from': 8, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Martes Tarde', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 17, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Miércoles Mañana', 'dayofweek': '2', 'hour_from': 8, 'hour_to': 14, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Miércoles Tarde', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 17, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Jueves Mañana', 'dayofweek': '3', 'hour_from': 8, 'hour_to': 14, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Jueves Tarde', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 17, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Viernes Mañana', 'dayofweek': '4', 'hour_from': 8, 'hour_to': 14, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Viernes Tarde', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 17, 'day_period': 'afternoon'})
+            ]"
+            />
+        </record>
+        <record id="resource_5h_14_h" model="resource.calendar">
+            <field name="name">6h00-14h00</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="hours_per_day">8</field>
+            <field name="attendance_ids"
+                   eval="[
+                (0, 0, {'name': 'Lunes Mañana', 'dayofweek': '0', 'hour_from': 8, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Lunes Tarde', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 17, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Martes Mañana', 'dayofweek': '1', 'hour_from': 8, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Martes Tarde', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 17, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Miércoles Mañana', 'dayofweek': '2', 'hour_from': 8, 'hour_to': 14, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Miércoles Tarde', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 17, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Jueves Mañana', 'dayofweek': '3', 'hour_from': 8, 'hour_to': 14, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Jueves Tarde', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 17, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Viernes Mañana', 'dayofweek': '4', 'hour_from': 8, 'hour_to': 14, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Viernes Tarde', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 17, 'day_period': 'afternoon'})
+            ]"
+            />
+        </record>
+        <record id="resource_rotativos" model="resource.calendar">
+            <field name="name">Turnos Rotativos</field>
             <field name="company_id" ref="base.main_company"/>
             <field name="hours_per_day">8</field>
             <field name="attendance_ids"

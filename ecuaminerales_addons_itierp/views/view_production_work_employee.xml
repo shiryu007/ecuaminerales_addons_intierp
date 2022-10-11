@@ -10,6 +10,7 @@
                 <field name="id"/>
                 <field name="employee_id"/>
                 <field name="codigo_clock"/>
+                <field name="resource_calendar_id"/>
                 <field name="departamento"/>
                 <field name="fecha_time"/>
                 <field name="hour" widget="float_time"/>
