@@ -32,6 +32,10 @@ class ProductionWorkHour(models.Model):
     message = fields.Html("Mensaje de Error")
     register_count = fields.Integer('Numero de Registros', compute='_compute_count_registers')
     employee_search = fields.Many2one('hr.employee', 'Empleado')
+    fecha_inicio = fields.Datetime('Fecha Inicio', store=True)
+    fecha_fin = fields.Datetime('Fecha Fin', store=True)
+    number_of_days = fields.Integer('Numero de Dias')
+    turnos_rotativos_html = fields.Html('Turnos Rotativos')
 
     def _compute_count_registers(self):
         self.register_count = len(self.hour_production_ids)
@@ -139,6 +143,10 @@ class ProductionWorkHour(models.Model):
                 else:
                     self.detectar_ingreso_salida(antes, ahora, minutes)
                 count += 1
+        if self.hour_production_ids:
+            self.fecha_inicio = min(self.hour_production_ids.mapped('fecha_time'))
+            self.fecha_fin = max(self.hour_production_ids.mapped('fecha_time'))
+            self.number_of_days = (self.fecha_fin - self.fecha_inicio).days
 
     def detectar_ingreso_salida(self, antes, ahora, minutes):
         # TURNO ROTATIVOS
@@ -160,7 +168,7 @@ class ProductionWorkHour(models.Model):
                 if (minutes / 60) > 14:
                     antes.type_mar = 'old'
                     return True
-                if 5 <= f_antes.hour <= 7 and f_ahora.hour <= 18:
+                if 5 <= f_antes.hour <= 8 and f_ahora.hour <= 18:
                     antes.type_mar = 'income'
                     ahora.type_mar = 'exit'
                     antes.turno = 't1'
@@ -209,6 +217,43 @@ class ProductionWorkHour(models.Model):
                     return True
             print("Toca ver por que llegas hasta aca....")
 
+    def turnos_rotativos_html_insertion(self):
+        if not self.hour_production_ids:
+            self.turnos_rotativos_html = ""
+            return True
+        sales_journal_id = self.env.ref('ecuaminerales_addons_itierp.resource_rotativos')
+        data_filter = self.hour_production_ids.filtered(
+            lambda x: x.resource_calendar_id == sales_journal_id and x.turno != 'no')
+        if not data_filter:
+            self.turnos_rotativos_html = ""
+            return True
+
+        html_text = """<table class="table table-bordered table-sm">
+                                        <thead>
+                                        <tr><th>Empleado</th>
+                                        """
+        fecha_header = self.fecha_inicio.strftime('%d-%m')
+        for day in range(self.number_of_days):
+            html_text += """<th>%s</th>""" % fecha_header
+            fecha_header = (self.fecha_inicio + timedelta(days=day + 1)).strftime('%d-%m')
+
+        html_text += """</thead>"""
+        for employee_id in set(data_filter.mapped('employee_id')):
+            list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            html_text += """<tr><th>%s</th>""" % employee_id.display_name
+            fecha_trabajo = self.fecha_inicio.strftime('%d-%m-%y')
+            for day in range(1, self.number_of_days + 1):
+                data = list_hours.filtered(lambda x: x.fecha_time.strftime('%d-%m-%y') == fecha_trabajo)
+                if data:
+                    inicio = max(data.mapped('fecha_time')) - min(data.mapped('fecha_time'))
+                    html_text += """<th>%s</th>""" % round(inicio.total_seconds() / 60 / 60, 2)
+                else:
+                    html_text += """<th>0</th>"""
+                fecha_trabajo = (self.fecha_inicio + timedelta(days=day)).strftime('%d-%m-%y')
+            html_text += """</tr>"""
+        self.turnos_rotativos_html = html_text + """</tbody></table>"""
+
     def delete_duplicates(self):
         self.hour_production_ids = self.hour_production_ids.filtered(lambda x: not x.delete)
         self.purge_data()
+        self.turnos_rotativos_html_insertion()

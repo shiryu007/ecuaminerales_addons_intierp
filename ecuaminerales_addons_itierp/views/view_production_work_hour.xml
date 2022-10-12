@@ -41,17 +41,25 @@
                         </group>
                         <group>
                             <field name="search_selection" widget="radio"/>
+                            <field name="fecha_inicio" readonly="True" force_save="1"/>
+                            <field name="fecha_fin" readonly="True" force_save="1"/>
+                            <field name="number_of_days" readonly="True" force_save="1"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="Datos Relog">
                             <div class="alert alert-info" role="alert" style="margin-bottom:0px;"
                                  attrs="{'invisible': [('message','=',False)]}">
-                                <h5 class="text-center" >
+                                <h5 class="text-center">
                                     <field name="message" readonly="1"/>
                                 </h5>
                             </div>
                             <field name="hour_production_ids" nolabel="1"/>
+                        </page>
+                        <page string="Turnos Rotativos" attrs="{'invisible': [('turnos_rotativos_html','=',False)]}">
+                            <div style="margin-bottom:0px;">
+                                <field name="turnos_rotativos_html" readonly="1" force_save="1"/>
+                            </div>
                         </page>
                         <page string="Filtrar Información">
                         </page>
