@@ -26,7 +26,7 @@
                                 string="CARGAR HORAS" states="draft,load"
                                 class="btn btn-primary"/>
                         <button type="object" icon="fa-dedent" name="delete_duplicates"
-                                string="DEPURAR DATOS" states="load"
+                                string="DEPURAR DATOS" states="load,purify"
                                 class="btn btn-primary"/>
                     </div>
                     <div class="oe_title">

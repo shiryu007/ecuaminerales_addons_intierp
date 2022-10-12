@@ -2,13 +2,14 @@ from datetime import datetime, timedelta, date
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
-import base64
 import xlrd
 import calendar
+import xlwt
+import io
+import base64
 
 # NUMERO MINUTOS DIFERENCIA
 MINUTOS_DUPLICADO = 7
-MINUTOS_TRABAJO = (8 * 60) + (2 * 60)
 
 
 class ProductionWorkHour(models.Model):
@@ -228,7 +229,7 @@ class ProductionWorkHour(models.Model):
             self.turnos_rotativos_html = ""
             return True
 
-        html_text = """<table class="table table-bordered table-sm">
+        html_text = """<table class="o_list_view table table-sm table-hover table-striped o_list_view_ungrouped">
                                         <thead>
                                         <tr><th>Empleado</th>
                                         """
@@ -248,12 +249,13 @@ class ProductionWorkHour(models.Model):
                     inicio = max(data.mapped('fecha_time')) - min(data.mapped('fecha_time'))
                     html_text += """<th>%s</th>""" % round(inicio.total_seconds() / 60 / 60, 2)
                 else:
-                    html_text += """<th>0</th>"""
-                fecha_trabajo = (self.fecha_inicio + timedelta(days=day)).strftime('%d-%m-%y')
+                    html_text += """<th class="text-danger">X</th>"""
+                fecha_trabajo = (self.fecha_inicio + timedelta(days= day)).strftime('%d-%m-%y')
             html_text += """</tr>"""
         self.turnos_rotativos_html = html_text + """</tbody></table>"""
 
     def delete_duplicates(self):
         self.hour_production_ids = self.hour_production_ids.filtered(lambda x: not x.delete)
         self.purge_data()
+        self.state = 'purify'
         self.turnos_rotativos_html_insertion()
