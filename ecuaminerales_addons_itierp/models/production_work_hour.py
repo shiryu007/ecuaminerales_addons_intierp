@@ -37,6 +37,7 @@ class ProductionWorkHour(models.Model):
     fecha_fin = fields.Datetime('Fecha Fin', store=True)
     number_of_days = fields.Integer('Numero de Dias')
     turnos_rotativos_html = fields.Html('Turnos Rotativos')
+    file = fields.Binary('document')
 
     def _compute_count_registers(self):
         self.register_count = len(self.hour_production_ids)
@@ -250,7 +251,7 @@ class ProductionWorkHour(models.Model):
                     html_text += """<th>%s</th>""" % round(inicio.total_seconds() / 60 / 60, 2)
                 else:
                     html_text += """<th class="text-danger">X</th>"""
-                fecha_trabajo = (self.fecha_inicio + timedelta(days= day)).strftime('%d-%m-%y')
+                fecha_trabajo = (self.fecha_inicio + timedelta(days=day)).strftime('%d-%m-%y')
             html_text += """</tr>"""
         self.turnos_rotativos_html = html_text + """</tbody></table>"""
 
@@ -259,3 +260,38 @@ class ProductionWorkHour(models.Model):
         self.purge_data()
         self.state = 'purify'
         self.turnos_rotativos_html_insertion()
+
+    @api.multi
+    def print_excel_report(self):
+        workbook = xlwt.Workbook(encoding='utf-8', style_compression=2)
+        worksheet = workbook.add_sheet('Reporte Global')
+        style0 = xlwt.easyxf('font: name Times New Roman, color-index black, bold on')
+        style1 = xlwt.easyxf('font: name Times New Roman, color-index black, bold True; ')
+
+        style = xlwt.easyxf('font:height 200, bold True, name Arial; align: horiz center, vert center;'
+                            'borders: top medium,right medium,bottom medium,left medium')
+        worksheet.col(1).width = 7000
+        worksheet.col(3).width = 4000
+        worksheet.col(4).width = 3000
+        worksheet.col(5).width = 3000
+        worksheet.col(6).width = 3000
+        company_id = self.env.user.company_id
+        worksheet.write_merge(0, 2, 0, 12, str('%s \n Reporte \n' % company_id.display_name), style)
+        worksheet.write_merge(3, 3, 4, 6, str(datetime.now()), style)
+        worksheet.write_merge(5, 6, 0, 12, "")
+
+        return self.return_exel_report(workbook)
+
+    def return_exel_report(self, workbook):
+        fp = io.BytesIO()
+        name_report = "ReporteRoles.xls"
+        workbook.save(fp)
+        fp.seek(0)
+        data = fp.read()
+        fp.close()
+        self.file = base64.b64encode(data)
+        return {
+            'type': 'ir.actions.act_url', 'target': 'new',
+            'name': 'contract',
+            'url': '/web/content/%s/%s/file/%s?download=true' % (self._name, self.id, name_report),
+        }

@@ -28,7 +28,11 @@
                         <button type="object" icon="fa-dedent" name="delete_duplicates"
                                 string="DEPURAR DATOS" states="load,purify"
                                 class="btn btn-primary"/>
+                        <button type="object" icon="fa-file-excel-o" name="print_excel_report"
+                                string="IMPRIMIR EXCEL" states="load,purify,confirm"
+                                class="btn btn-primary"/>
                     </div>
+
                     <div class="oe_title">
                         <h1>
                             <field name="sequence"/>
@@ -78,6 +82,12 @@
         <field name="arch" type="xml">
             <tree string="bodega">
                 <field name="sequence"/>
+                <field name="file_name"/>
+                <field name="state"/>
+                <field name="fecha_inicio"/>
+                <field name="fecha_fin"/>
+                <field name="number_of_days"/>
+                <field name="search_selection"/>
             </tree>
         </field>
     </record>
