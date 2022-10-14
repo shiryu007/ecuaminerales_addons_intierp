@@ -262,9 +262,43 @@ class ProductionWorkHour(models.Model):
         self.state = 'purify'
         self.turnos_rotativos_html_insertion()
 
-    def print_header_excel(self, sheet, format_center):
-        sheet.set_column(0, 0, 30)
+    def data_turnos_of_day(self, marcaciones):
+        if not marcaciones:
+            return ["", "", "", ""]
+        data = ["", "", "", ""]
+        # TURNO 1
+        t1 = marcaciones.filtered(lambda x: x.turno == 't1')
+        if t1:
+            fechas = max(t1.mapped('fecha_time')) - min(t1.mapped('fecha_time'))
+            data[0] = fechas.total_seconds() / 60 / 60
+        t2 = marcaciones.filtered(lambda x: x.turno == 't2')
+        if t2:
+            fechas = max(t2.mapped('fecha_time')) - min(t2.mapped('fecha_time'))
+            data[1] = fechas.total_seconds() / 60 / 60
+        t3 = marcaciones.filtered(lambda x: x.turno == 't3')
+        if t3:
+            fechas = max(t3.mapped('fecha_time')) - min(t3.mapped('fecha_time'))
+            data[2] = fechas.total_seconds() / 60 / 60
+        tt2 = marcaciones.filtered(lambda x: x.turno == 'tt2')
+        if tt2:
+            fechas = max(tt2.mapped('fecha_time')) - min(tt2.mapped('fecha_time'))
+            data[3] = fechas.total_seconds() / 60 / 60
+        t1f = marcaciones.filtered(lambda x: x.turno == 't1f')
+        if t1f:
+            fechas = max(t1f.mapped('fecha_time')) - min(t1f.mapped('fecha_time'))
+            data[0] = fechas.total_seconds() / 60 / 60
+        t2f = marcaciones.filtered(lambda x: x.turno == 't2f')
+        if t2f:
+            fechas = max(t2f.mapped('fecha_time')) - min(t2f.mapped('fecha_time'))
+            data[1] = fechas.total_seconds() / 60 / 60
+        t3f = marcaciones.filtered(lambda x: x.turno == 't3f')
+        if t3f:
+            fechas = max(t3f.mapped('fecha_time')) - min(t3f.mapped('fecha_time'))
+            data[2] = fechas.total_seconds() / 60 / 60
+        return data
 
+    def print_header_excel(self, sheet, format_center):
+        sheet.set_column(0, 0, 45)
         sheet.merge_range(0, 0, 1, 0, "Empleado", format_center)
         fecha_header = self.fecha_inicio.strftime('%d-%m')
         count = 1
@@ -278,15 +312,33 @@ class ProductionWorkHour(models.Model):
             fecha_header = (self.fecha_inicio + timedelta(days=day + 1)).strftime('%d-%m')
             count += 4
 
+    def excel_turnos_rotativos(self, sheet, format_center):
+        sales_journal_id = self.env.ref('ecuaminerales_addons_itierp.resource_rotativos')
+        data_filter = self.hour_production_ids.filtered(
+            lambda x: x.resource_calendar_id == sales_journal_id and x.turno != 'no')
+        fila = 2
+        for employee_id in set(data_filter.mapped('employee_id')):
+            sheet.write(fila, 0, employee_id.display_name, format_center)
+            list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            fecha_header = self.fecha_inicio.strftime('%d-%m-%y')
+            col = 1
+            for day in range(1, self.number_of_days + 1):
+                data = list_hours.filtered(lambda x: x.fecha_time.strftime('%d-%m-%y') == fecha_header)
+                fecha_header = (self.fecha_inicio + timedelta(days=day + 1)).strftime('%d-%m-%y')
+                data |= list_hours.filtered(lambda x: x.fecha_time.strftime('%d-%m-%y') == fecha_header)
+                for val in self.data_turnos_of_day(data):
+                    sheet.write(fila, col, val)
+                    col += 1
+            fila += 1
+
     @api.multi
     def print_excel_report(self):
         fp = BytesIO()
         workbook = xlsxwriter.Workbook(fp)
-        sheet = workbook.add_worksheet('Reporte')
+        sheet = workbook.add_worksheet('Turnos Rotativos')
         format_center = workbook.add_format({'bold': True, 'align': 'vcenter'})
         self.print_header_excel(sheet, format_center)
-
-        # worksheet.write_merge(0, 0, 4, 6, str(datetime.now()), style)
+        self.excel_turnos_rotativos(sheet, format_center)
         return self.return_exel_report(fp, workbook)
 
     def return_exel_report(self, fp, workbook):
