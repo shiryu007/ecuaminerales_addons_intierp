@@ -320,16 +320,45 @@ class ProductionWorkHour(models.Model):
         for employee_id in set(data_filter.mapped('employee_id')):
             sheet.write(fila, 0, employee_id.display_name, format_center)
             list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
-            fecha_header = self.fecha_inicio.strftime('%d-%m-%y')
+            fecha_header = self.fecha_inicio - timedelta(hours=5)
             col = 1
             for day in range(1, self.number_of_days + 1):
-                data = list_hours.filtered(lambda x: x.fecha_time.strftime('%d-%m-%y') == fecha_header)
-                fecha_header = (self.fecha_inicio + timedelta(days=day + 1)).strftime('%d-%m-%y')
-                data |= list_hours.filtered(lambda x: x.fecha_time.strftime('%d-%m-%y') == fecha_header)
-                for val in self.data_turnos_of_day(data):
-                    sheet.write(fila, col, val)
-                    col += 1
+                data = list_hours.filtered(
+                    lambda x: x.fecha_time.strftime('%d-%m-%y') == fecha_header.strftime('%d-%m-%y') and x.turno in [
+                        't1', 't1f'])
+                self.print_data_lina(data, col, fila, sheet)
+                col += 1
+                data = list_hours.filtered(
+                    lambda x: x.fecha_time.strftime('%d-%m-%y') == fecha_header.strftime('%d-%m-%y') and x.turno in [
+                        't2'])
+                self.print_data_lina(data, col, fila, sheet)
+                col += 1
+                fecha_nex = self.fecha_inicio + timedelta(days=day) - timedelta(hours=5)
+
+                data = list_hours.filtered(
+                    lambda x: fecha_header < x.fecha_time < fecha_nex and x.turno in ['t3', 't2f', 't3f'])
+                if len(data) > 2:
+                    print("Herer")
+                self.print_data_lina(data, col, fila, sheet)
+                col += 1
+                sheet.write(fila, col, "X")
+                col += 1
+
+                fecha_header = self.fecha_inicio + timedelta(days=day) - timedelta(hours=5)
+
             fila += 1
+
+    def print_data_lina(self, data, col, fila, sheet):
+        if data:
+            data = data.sorted('fecha_time')
+            if not len(data) > 1:
+                sheet.write(fila, col, 1)
+            else:
+                horas = data[1].fecha_time - data[0].fecha_time
+                horas = round(horas.total_seconds() / 60 / 60, 2)
+                sheet.write(fila, col, horas)
+        else:
+            sheet.write(fila, col, '')
 
     @api.multi
     def print_excel_report(self):
