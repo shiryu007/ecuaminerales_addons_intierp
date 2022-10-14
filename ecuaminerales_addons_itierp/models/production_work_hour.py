@@ -4,9 +4,10 @@ from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 import xlrd
 import calendar
-import xlwt
+import xlsxwriter
 import io
 import base64
+from io import BytesIO
 
 # NUMERO MINUTOS DIFERENCIA
 MINUTOS_DUPLICADO = 7
@@ -261,35 +262,39 @@ class ProductionWorkHour(models.Model):
         self.state = 'purify'
         self.turnos_rotativos_html_insertion()
 
+    def print_header_excel(self, sheet, format_center):
+        sheet.set_column(0, 0, 30)
+
+        sheet.merge_range(0, 0, 1, 0, "Empleado", format_center)
+        fecha_header = self.fecha_inicio.strftime('%d-%m')
+        count = 1
+        for day in range(self.number_of_days):
+            sheet.merge_range(0, count, 0, count + 3, fecha_header, format_center)
+            sheet.set_column(count, count + 3, 3)
+            sheet.write(1, count, "T1", format_center)
+            sheet.write(1, count + 1, "T2", format_center)
+            sheet.write(1, count + 2, "T3", format_center)
+            sheet.write(1, count + 3, "TD", format_center)
+            fecha_header = (self.fecha_inicio + timedelta(days=day + 1)).strftime('%d-%m')
+            count += 4
+
     @api.multi
     def print_excel_report(self):
-        workbook = xlwt.Workbook(encoding='utf-8', style_compression=2)
-        worksheet = workbook.add_sheet('Reporte Global')
-        style0 = xlwt.easyxf('font: name Times New Roman, color-index black, bold on')
-        style1 = xlwt.easyxf('font: name Times New Roman, color-index black, bold True; ')
+        fp = BytesIO()
+        workbook = xlsxwriter.Workbook(fp)
+        sheet = workbook.add_worksheet('Reporte')
+        format_center = workbook.add_format({'bold': True, 'align': 'vcenter'})
+        self.print_header_excel(sheet, format_center)
 
-        style = xlwt.easyxf('font:height 200, bold True, name Arial; align: horiz center, vert center;'
-                            'borders: top medium,right medium,bottom medium,left medium')
-        worksheet.col(1).width = 7000
-        worksheet.col(3).width = 4000
-        worksheet.col(4).width = 3000
-        worksheet.col(5).width = 3000
-        worksheet.col(6).width = 3000
-        company_id = self.env.user.company_id
-        worksheet.write_merge(0, 2, 0, 12, str('%s \n Reporte \n' % company_id.display_name), style)
-        worksheet.write_merge(3, 3, 4, 6, str(datetime.now()), style)
-        worksheet.write_merge(5, 6, 0, 12, "")
+        # worksheet.write_merge(0, 0, 4, 6, str(datetime.now()), style)
+        return self.return_exel_report(fp, workbook)
 
-        return self.return_exel_report(workbook)
-
-    def return_exel_report(self, workbook):
-        fp = io.BytesIO()
-        name_report = "ReporteRoles.xls"
-        workbook.save(fp)
-        fp.seek(0)
-        data = fp.read()
+    def return_exel_report(self, fp, workbook):
+        workbook.close()
+        self.file = base64.encodestring(fp.getvalue())
         fp.close()
-        self.file = base64.b64encode(data)
+        name_report = "ReporteRoles"
+        name_report += '%2Exlsx'
         return {
             'type': 'ir.actions.act_url', 'target': 'new',
             'name': 'contract',
