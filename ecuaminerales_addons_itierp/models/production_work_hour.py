@@ -318,45 +318,61 @@ class ProductionWorkHour(models.Model):
             lambda x: x.resource_calendar_id == sales_journal_id and x.turno != 'no')
         fila = 2
         for employee_id in set(data_filter.mapped('employee_id')):
+
             sheet.write(fila, 0, employee_id.display_name, format_center)
             list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
-            fecha_header = self.fecha_inicio - timedelta(hours=5)
+            fecha_header = self.fecha_inicio
             col = 1
             for day in range(1, self.number_of_days + 1):
-                data = list_hours.filtered(
-                    lambda x: x.fecha_time.strftime('%d-%m-%y') == fecha_header.strftime('%d-%m-%y') and x.turno in [
-                        't1', 't1f'])
-                self.print_data_lina(data, col, fila, sheet)
-                col += 1
-                data = list_hours.filtered(
-                    lambda x: x.fecha_time.strftime('%d-%m-%y') == fecha_header.strftime('%d-%m-%y') and x.turno in [
-                        't2'])
-                self.print_data_lina(data, col, fila, sheet)
-                col += 1
                 fecha_nex = self.fecha_inicio + timedelta(days=day) - timedelta(hours=5)
-
-                data = list_hours.filtered(
-                    lambda x: fecha_header < x.fecha_time < fecha_nex and x.turno in ['t3', 't2f', 't3f'])
-                if len(data) > 2:
-                    print("Herer")
-                self.print_data_lina(data, col, fila, sheet)
+                data = list_hours.filtered(lambda x: fecha_header < x.fecha_time < fecha_nex)
+                self.print_data_lina(data, col, fila, sheet, 't1', fecha_header)
+                # col += 1
+                # data = list_hours.filtered(lambda x: fecha_header < x.fecha_time < fecha_nex and x.turno in [
+                #     't2'])
+                # self.print_data_lina(data, col, fila, sheet)
+                # col += 1
+                #
+                # data = list_hours.filtered(
+                #     lambda x: fecha_header < x.fecha_time < fecha_nex and x.turno in ['t3'])
+                # if len(data) > 2:
+                #     print("Herer")
+                # self.print_data_lina(data, col, fila, sheet)
+                col += 1
+                sheet.write(fila, col, "X")
+                col += 1
+                sheet.write(fila, col, "X")
                 col += 1
                 sheet.write(fila, col, "X")
                 col += 1
 
-                fecha_header = self.fecha_inicio + timedelta(days=day) - timedelta(hours=5)
+                fecha_header = self.fecha_inicio + timedelta(days=day)
 
             fila += 1
 
-    def print_data_lina(self, data, col, fila, sheet):
+    def print_data_lina(self, data, col, fila, sheet, turno, fecha):
         if data:
             data = data.sorted('fecha_time')
             if not len(data) > 1:
                 sheet.write(fila, col, 1)
             else:
-                horas = data[1].fecha_time - data[0].fecha_time
-                horas = round(horas.total_seconds() / 60 / 60, 2)
-                sheet.write(fila, col, horas)
+                inicio = False
+                fin = False
+                if turno == 't1':
+                    data = data.filtered(lambda x: x.turno == turno)
+                    for mark in data.sorted('fecha_time'):
+                        if mark.type_mar == 'income' and not inicio:
+                            inicio = mark
+                        if mark.type_mar == 'exit' and not fin:
+                            fin = mark
+                        if inicio and fin:
+                            break
+                if inicio and fin and inicio.fecha_time < fin.fecha_time:
+                    horas = fin.fecha_time - inicio.fecha_time
+                    horas = round(horas.total_seconds() / 60 / 60, 2)
+                    sheet.write(fila, col, horas)
+                else:
+                    sheet.write(fila, col, '')
         else:
             sheet.write(fila, col, '')
 
