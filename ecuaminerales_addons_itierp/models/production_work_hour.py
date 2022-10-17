@@ -306,14 +306,24 @@ class ProductionWorkHour(models.Model):
                     data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t2f'])
                     self.print_data_lina_t1_t2(data, col, fila, sheet)
                     col += 1
+                fecha_header = fecha_header.replace(hour=19, minute=30, second=0)
+                fecha_nex = fecha_header + timedelta(hours=16)
+                data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t3'])
+                if data:
+                    self.print_data_lina_t1_t2(data, col, fila, sheet)
+                    col += 1
+                else:
+                    fecha_header = fecha_header.replace(hour=15, minute=30, second=0)
+                    fecha_nex = fecha_header + timedelta(hours=16)
+                    data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t3f'])
+                    self.print_data_lina_t1_t2(data, col, fila, sheet)
+                    col += 1
 
                 if data and not len(data) > 1:
                     info_1 = [data.fecha_time, data.fecha_time - timedelta(hours=5), data.type_mar, data.turno]
                     info_2 = [data.employee_id.name, data.id]
                     print("No hay mas de 1")
 
-                sheet.write(fila, col, "X")
-                col += 1
                 sheet.write(fila, col, "X")
                 col += 1
 
