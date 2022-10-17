@@ -198,8 +198,6 @@ class ProductionWorkHour(models.Model):
 
             if f_antes.weekday() in [calendar.SATURDAY, calendar.SUNDAY]:
                 if 5 <= f_antes.hour <= 7 and f_ahora.hour <= 20 and f_ahora.day == f_antes.day:
-                    if ahora.employee_id.name == 'DARLING LEONARDO CUENCA LUPU':
-                        print("Acaa")
                     antes.type_mar = 'income'
                     ahora.type_mar = 'exit'
                     antes.turno = 't1f'
@@ -292,20 +290,21 @@ class ProductionWorkHour(models.Model):
             col = 1
             for day in range(1, self.number_of_days + 2):
                 fecha_nex = fecha_header + timedelta(hours=16)
-                turnos = ['t1', 't1f']
-                data = list_hours.filtered(
-                    lambda x: fecha_header <= x.fecha_time - timedelta(hours=5) <= fecha_nex and x.turno in turnos)
-                data = data.sorted('fecha_time')
-                self.print_data_lina_t1(data, col, fila, sheet)
+                data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t1', 't1f'])
+                self.print_data_lina_t1_t2(data, col, fila, sheet)
                 col += 1
+
+                fecha_header = fecha_header.replace(hour=11, minute=30, second=0)
+                fecha_nex = fecha_header + timedelta(hours=16)
+                data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t2'])
+                self.print_data_lina_t1_t2(data, col, fila, sheet)
+                col += 1
+
                 if data and not len(data) > 1:
                     info_1 = [data.fecha_time, data.fecha_time - timedelta(hours=5), data.type_mar, data.turno]
                     info_2 = [data.employee_id.name, data.id]
                     print("No hay mas de 1")
 
-                sheet.write(fila, col, "X")
-
-                col += 1
                 sheet.write(fila, col, "X")
                 col += 1
                 sheet.write(fila, col, "X")
@@ -316,33 +315,15 @@ class ProductionWorkHour(models.Model):
 
             fila += 1
 
-    def print_data_lina_t1(self, data, col, fila, sheet):
-        if data:
-            inicio = False
-            fin = False
-            data = data.filtered(lambda x: x.turno in ['t1', 't1f'])
-            for mark in data.sorted('fecha_time'):
-                if mark.type_mar == 'income' and not inicio:
-                    inicio = mark
-                if mark.type_mar == 'exit' and not fin and inicio:
-                    fin = mark
-                if inicio and fin:
-                    break
-            if inicio and fin and inicio.fecha_time < fin.fecha_time:
-                horas = fin.fecha_time - inicio.fecha_time
-                horas = round(horas.total_seconds() / 60 / 60, 2)
-                sheet.write(fila, col, horas)
-            else:
-                sheet.write(fila, col, '')
-            return True
-        else:
-            sheet.write(fila, col, '')
+    def filter_data_turno(self, list_hours, fecha_header, fecha_nex, turnos):
+        return list_hours.filtered(
+            lambda x: fecha_header <= x.fecha_time - timedelta(hours=5) <= fecha_nex and x.turno in turnos).sorted(
+            'fecha_time')
 
-    def print_data_lina_t2(self, data, col, fila, sheet):
+    def print_data_lina_t1_t2(self, data, col, fila, sheet):
         if data:
             inicio = False
             fin = False
-            data = data.filtered(lambda x: x.turno in ['t1', 't1f'])
             for mark in data.sorted('fecha_time'):
                 if mark.type_mar == 'income' and not inicio:
                     inicio = mark
