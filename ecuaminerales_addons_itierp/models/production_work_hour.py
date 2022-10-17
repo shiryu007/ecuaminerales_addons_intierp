@@ -11,6 +11,7 @@ from io import BytesIO
 
 # NUMERO MINUTOS DIFERENCIA
 MINUTOS_DUPLICADO = 7
+TIEMPO_NO_EXTRA = 1
 
 
 class ProductionWorkHour(models.Model):
@@ -276,6 +277,17 @@ class ProductionWorkHour(models.Model):
             sheet.write(1, count + 3, "TD", format_center)
             fecha_header = (self.fecha_inicio + timedelta(days=day + 1)).strftime('%d-%m')
             count += 4
+        sheet.merge_range(0, count, 1, count, "TOTAL", format_center)
+        count += 1
+        sheet.merge_range(0, count, 1, count, "T1", format_center)
+        count += 1
+        sheet.merge_range(0, count, 1, count, "T2", format_center)
+        count += 1
+        sheet.merge_range(0, count, 1, count, "T3", format_center)
+        count += 1
+        sheet.merge_range(0, count, 1, count, "TD", format_center)
+        count += 1
+        sheet.merge_range(0, count, 1, count, "EXTRAS", format_center)
 
     def excel_turnos_rotativos(self, sheet, format_center):
         sales_journal_id = self.env.ref('ecuaminerales_addons_itierp.resource_rotativos')
@@ -288,46 +300,79 @@ class ProductionWorkHour(models.Model):
             list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
             fecha_header = self.fecha_inicio - timedelta(hours=7)
             col = 1
+            t1 = 0
+            t2 = 0
+            t3 = 0
+            td = 0
+            extras = 0
             for day in range(1, self.number_of_days + 2):
                 fecha_nex = fecha_header + timedelta(hours=16)
-                data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t1', 't1f'])
-                self.print_data_lina_t1_t2(data, col, fila, sheet)
-                col += 1
+                data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t1'])
+                if data:
+                    h, ex = self.print_data_lina_t1_t2(data, col, fila, sheet, 't1')
+                    t1 += h
+                    col += 1
+                else:
+                    data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t1f'])
+                    h, ex = self.print_data_lina_t1_t2(data, col, fila, sheet, 't1f')
+                    t1 += h
+                    col += 1
 
                 fecha_header = fecha_header.replace(hour=11, minute=30, second=0)
                 fecha_nex = fecha_header + timedelta(hours=16)
                 data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t2'])
                 if data:
-                    self.print_data_lina_t1_t2(data, col, fila, sheet)
+                    h, ex = self.print_data_lina_t1_t2(data, col, fila, sheet, 't2')
+                    extras += ex
+                    t2 += h
                     col += 1
                 else:
                     fecha_header = fecha_header.replace(hour=15, minute=30, second=0)
                     fecha_nex = fecha_header + timedelta(hours=16)
                     data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t2f'])
-                    self.print_data_lina_t1_t2(data, col, fila, sheet)
+                    h, ex = self.print_data_lina_t1_t2(data, col, fila, sheet, 't2f')
+                    extras += ex
+                    t2 += h
                     col += 1
 
                 fecha_header = fecha_header.replace(hour=19, minute=30, second=0)
                 fecha_nex = fecha_header + timedelta(hours=16)
                 data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t3'])
                 if data:
-                    self.print_data_lina_t1_t2(data, col, fila, sheet)
+                    h, ex = self.print_data_lina_t1_t2(data, col, fila, sheet, 't3')
+                    extras += ex
+                    t3 += h
                     col += 1
                 else:
                     fecha_header = fecha_header.replace(hour=15, minute=30, second=0)
                     fecha_nex = fecha_header + timedelta(hours=16)
                     data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t3f'])
-                    self.print_data_lina_t1_t2(data, col, fila, sheet)
+                    h, ex = self.print_data_lina_t1_t2(data, col, fila, sheet, 't3f')
+                    extras += ex
+                    t3 += h
                     col += 1
 
                 fecha_header = fecha_header.replace(hour=6, minute=30, second=0)
                 fecha_nex = fecha_header + timedelta(hours=19)
                 data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['tt2'])
-                self.print_data_lina_t1_t2(data, col, fila, sheet)
+                h, ex = self.print_data_lina_t1_t2(data, col, fila, sheet, 'tt2')
+                extras += ex
+                td += h
                 col += 1
                 fecha_header = self.fecha_inicio + timedelta(days=day)
                 fecha_header = fecha_header - timedelta(hours=7)
-
+            sheet.write(fila, col, t1 + t2 + t3 + td)
+            col += 1
+            sheet.write(fila, col, t1)
+            col += 1
+            sheet.write(fila, col, t2)
+            col += 1
+            sheet.write(fila, col, t3)
+            col += 1
+            sheet.write(fila, col, td)
+            col += 1
+            sheet.write(fila, col, extras)
+            col += 1
             fila += 1
 
     def filter_data_turno(self, list_hours, fecha_header, fecha_nex, turnos):
@@ -335,7 +380,20 @@ class ProductionWorkHour(models.Model):
             lambda x: fecha_header <= x.fecha_time - timedelta(hours=5) <= fecha_nex and x.turno in turnos).sorted(
             'fecha_time')
 
-    def print_data_lina_t1_t2(self, data, col, fila, sheet):
+    def get_horas_extras(self, turno, horas):
+        if turno in ['t1', 't2', 't3']:
+            extra = horas - 8
+            if extra > 0 and extra >= TIEMPO_NO_EXTRA:
+                return extra
+            return 0
+        if turno in ['t1f', 't2f', 't3f', 'tt2']:
+            extra = horas - 12
+            if extra > 0 and extra >= TIEMPO_NO_EXTRA:
+                return extra
+            return 0
+        return 0
+
+    def print_data_lina_t1_t2(self, data, col, fila, sheet, turno):
         if data:
             inicio = False
             fin = False
@@ -350,11 +408,13 @@ class ProductionWorkHour(models.Model):
                 horas = fin.fecha_time - inicio.fecha_time
                 horas = round(horas.total_seconds() / 60 / 60, 2)
                 sheet.write(fila, col, horas)
+                return horas, self.get_horas_extras(turno, horas)
             else:
                 sheet.write(fila, col, '')
-            return True
+            return 0, 0
         else:
             sheet.write(fila, col, '')
+            return 0, 0
 
     @api.multi
     def print_excel_report(self):
