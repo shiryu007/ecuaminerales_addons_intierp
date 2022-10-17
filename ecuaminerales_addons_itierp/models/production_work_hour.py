@@ -197,7 +197,9 @@ class ProductionWorkHour(models.Model):
                     return True
 
             if f_antes.weekday() in [calendar.SATURDAY, calendar.SUNDAY]:
-                if 5 <= f_antes.hour <= 7 and f_ahora.hour <= 20:
+                if 5 <= f_antes.hour <= 7 and f_ahora.hour <= 20 and f_ahora.day == f_antes.day:
+                    if ahora.employee_id.name == 'DARLING LEONARDO CUENCA LUPU':
+                        print("Acaa")
                     antes.type_mar = 'income'
                     ahora.type_mar = 'exit'
                     antes.turno = 't1f'
@@ -262,41 +264,6 @@ class ProductionWorkHour(models.Model):
         self.state = 'purify'
         self.turnos_rotativos_html_insertion()
 
-    def data_turnos_of_day(self, marcaciones):
-        if not marcaciones:
-            return ["", "", "", ""]
-        data = ["", "", "", ""]
-        # TURNO 1
-        t1 = marcaciones.filtered(lambda x: x.turno == 't1')
-        if t1:
-            fechas = max(t1.mapped('fecha_time')) - min(t1.mapped('fecha_time'))
-            data[0] = fechas.total_seconds() / 60 / 60
-        t2 = marcaciones.filtered(lambda x: x.turno == 't2')
-        if t2:
-            fechas = max(t2.mapped('fecha_time')) - min(t2.mapped('fecha_time'))
-            data[1] = fechas.total_seconds() / 60 / 60
-        t3 = marcaciones.filtered(lambda x: x.turno == 't3')
-        if t3:
-            fechas = max(t3.mapped('fecha_time')) - min(t3.mapped('fecha_time'))
-            data[2] = fechas.total_seconds() / 60 / 60
-        tt2 = marcaciones.filtered(lambda x: x.turno == 'tt2')
-        if tt2:
-            fechas = max(tt2.mapped('fecha_time')) - min(tt2.mapped('fecha_time'))
-            data[3] = fechas.total_seconds() / 60 / 60
-        t1f = marcaciones.filtered(lambda x: x.turno == 't1f')
-        if t1f:
-            fechas = max(t1f.mapped('fecha_time')) - min(t1f.mapped('fecha_time'))
-            data[0] = fechas.total_seconds() / 60 / 60
-        t2f = marcaciones.filtered(lambda x: x.turno == 't2f')
-        if t2f:
-            fechas = max(t2f.mapped('fecha_time')) - min(t2f.mapped('fecha_time'))
-            data[1] = fechas.total_seconds() / 60 / 60
-        t3f = marcaciones.filtered(lambda x: x.turno == 't3f')
-        if t3f:
-            fechas = max(t3f.mapped('fecha_time')) - min(t3f.mapped('fecha_time'))
-            data[2] = fechas.total_seconds() / 60 / 60
-        return data
-
     def print_header_excel(self, sheet, format_center):
         sheet.set_column(0, 0, 45)
         sheet.merge_range(0, 0, 1, 0, "Empleado", format_center)
@@ -317,20 +284,29 @@ class ProductionWorkHour(models.Model):
         data_filter = self.hour_production_ids.filtered(
             lambda x: x.resource_calendar_id == sales_journal_id and x.turno != 'no')
         fila = 2
-        for employee_id in set(data_filter.mapped('employee_id')):
+        for employee_id in data_filter.mapped('employee_id').sorted('name'):
 
             sheet.write(fila, 0, employee_id.display_name, format_center)
             list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
-            fecha_header = self.fecha_inicio
+            fecha_header = self.fecha_inicio - timedelta(hours=7)
             col = 1
             for day in range(1, self.number_of_days + 1):
-                fecha_nex = self.fecha_inicio + timedelta(days=day) - timedelta(hours=5)
-                data = list_hours.filtered(lambda x: fecha_header < x.fecha_time < fecha_nex)
-                self.print_data_lina(data, col, fila, sheet, 't1', fecha_header)
-                # col += 1
-                # data = list_hours.filtered(lambda x: fecha_header < x.fecha_time < fecha_nex and x.turno in [
-                #     't2'])
-                # self.print_data_lina(data, col, fila, sheet)
+                fecha_nex = fecha_header + timedelta(hours=16)
+                turnos = ['t1', 't1f']
+                data = list_hours.filtered(
+                    lambda x: fecha_header <= x.fecha_time - timedelta(hours=5) <= fecha_nex and x.turno in turnos)
+                data = data.sorted('fecha_time')
+                # if not data:
+                #     continue
+                if data and not len(data) > 1:
+                    info_1 = [data.fecha_time, data.fecha_time - timedelta(hours=5), data.type_mar, data.turno]
+                    info_2 = [data.employee_id.name, data.id]
+                    print("No hay mas de 1")
+
+                self.print_data_lina_t1(data, col, fila, sheet)
+                col += 1
+                sheet.write(fila, col, "X")
+                # self.print_data_lina(data, col, fila, sheet, 't2', fecha_header)
                 # col += 1
                 #
                 # data = list_hours.filtered(
@@ -338,8 +314,7 @@ class ProductionWorkHour(models.Model):
                 # if len(data) > 2:
                 #     print("Herer")
                 # self.print_data_lina(data, col, fila, sheet)
-                col += 1
-                sheet.write(fila, col, "X")
+
                 col += 1
                 sheet.write(fila, col, "X")
                 col += 1
@@ -347,32 +322,31 @@ class ProductionWorkHour(models.Model):
                 col += 1
 
                 fecha_header = self.fecha_inicio + timedelta(days=day)
+                fecha_header = fecha_header - timedelta(hours=7)
 
             fila += 1
 
-    def print_data_lina(self, data, col, fila, sheet, turno, fecha):
+    def print_data_lina_t1(self, data, col, fila, sheet):
         if data:
-            data = data.sorted('fecha_time')
-            if not len(data) > 1:
-                sheet.write(fila, col, 1)
+            inicio = False
+            fin = False
+            data = data.filtered(lambda x: x.turno in ['t1', 't1f'])
+            for mark in data.sorted('fecha_time'):
+                if mark.type_mar == 'income' and not inicio:
+                    inicio = mark
+                if mark.type_mar == 'exit' and not fin and inicio:
+                    fin = mark
+                if inicio and fin:
+                    break
+            if inicio and fin and inicio.fecha_time < fin.fecha_time:
+                horas = fin.fecha_time - inicio.fecha_time
+                horas = round(horas.total_seconds() / 60 / 60, 2)
+                sheet.write(fila, col, horas)
             else:
-                inicio = False
-                fin = False
-                if turno == 't1':
-                    data = data.filtered(lambda x: x.turno == turno)
-                    for mark in data.sorted('fecha_time'):
-                        if mark.type_mar == 'income' and not inicio:
-                            inicio = mark
-                        if mark.type_mar == 'exit' and not fin:
-                            fin = mark
-                        if inicio and fin:
-                            break
-                if inicio and fin and inicio.fecha_time < fin.fecha_time:
-                    horas = fin.fecha_time - inicio.fecha_time
-                    horas = round(horas.total_seconds() / 60 / 60, 2)
-                    sheet.write(fila, col, horas)
-                else:
-                    sheet.write(fila, col, '')
+                sheet.write(fila, col, '')
+            return True
+
+
         else:
             sheet.write(fila, col, '')
 
