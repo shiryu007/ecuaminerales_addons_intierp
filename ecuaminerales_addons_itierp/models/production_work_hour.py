@@ -269,7 +269,7 @@ class ProductionWorkHour(models.Model):
         sheet.merge_range(0, 0, 1, 0, "Empleado", format_center)
         fecha_header = self.fecha_inicio.strftime('%d-%m')
         count = 1
-        for day in range(self.number_of_days):
+        for day in range(self.number_of_days + 1):
             sheet.merge_range(0, count, 0, count + 3, fecha_header, format_center)
             sheet.set_column(count, count + 3, 3)
             sheet.write(1, count, "T1", format_center)
@@ -290,30 +290,20 @@ class ProductionWorkHour(models.Model):
             list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
             fecha_header = self.fecha_inicio - timedelta(hours=7)
             col = 1
-            for day in range(1, self.number_of_days + 1):
+            for day in range(1, self.number_of_days + 2):
                 fecha_nex = fecha_header + timedelta(hours=16)
                 turnos = ['t1', 't1f']
                 data = list_hours.filtered(
                     lambda x: fecha_header <= x.fecha_time - timedelta(hours=5) <= fecha_nex and x.turno in turnos)
                 data = data.sorted('fecha_time')
-                # if not data:
-                #     continue
+                self.print_data_lina_t1(data, col, fila, sheet)
+                col += 1
                 if data and not len(data) > 1:
                     info_1 = [data.fecha_time, data.fecha_time - timedelta(hours=5), data.type_mar, data.turno]
                     info_2 = [data.employee_id.name, data.id]
                     print("No hay mas de 1")
 
-                self.print_data_lina_t1(data, col, fila, sheet)
-                col += 1
                 sheet.write(fila, col, "X")
-                # self.print_data_lina(data, col, fila, sheet, 't2', fecha_header)
-                # col += 1
-                #
-                # data = list_hours.filtered(
-                #     lambda x: fecha_header < x.fecha_time < fecha_nex and x.turno in ['t3'])
-                # if len(data) > 2:
-                #     print("Herer")
-                # self.print_data_lina(data, col, fila, sheet)
 
                 col += 1
                 sheet.write(fila, col, "X")
@@ -345,8 +335,28 @@ class ProductionWorkHour(models.Model):
             else:
                 sheet.write(fila, col, '')
             return True
+        else:
+            sheet.write(fila, col, '')
 
-
+    def print_data_lina_t2(self, data, col, fila, sheet):
+        if data:
+            inicio = False
+            fin = False
+            data = data.filtered(lambda x: x.turno in ['t1', 't1f'])
+            for mark in data.sorted('fecha_time'):
+                if mark.type_mar == 'income' and not inicio:
+                    inicio = mark
+                if mark.type_mar == 'exit' and not fin and inicio:
+                    fin = mark
+                if inicio and fin:
+                    break
+            if inicio and fin and inicio.fecha_time < fin.fecha_time:
+                horas = fin.fecha_time - inicio.fecha_time
+                horas = round(horas.total_seconds() / 60 / 60, 2)
+                sheet.write(fila, col, horas)
+            else:
+                sheet.write(fila, col, '')
+            return True
         else:
             sheet.write(fila, col, '')
 
