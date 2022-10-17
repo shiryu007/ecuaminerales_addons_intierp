@@ -297,8 +297,15 @@ class ProductionWorkHour(models.Model):
                 fecha_header = fecha_header.replace(hour=11, minute=30, second=0)
                 fecha_nex = fecha_header + timedelta(hours=16)
                 data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t2'])
-                self.print_data_lina_t1_t2(data, col, fila, sheet)
-                col += 1
+                if data:
+                    self.print_data_lina_t1_t2(data, col, fila, sheet)
+                    col += 1
+                else:
+                    fecha_header = fecha_header.replace(hour=15, minute=30, second=0)
+                    fecha_nex = fecha_header + timedelta(hours=16)
+                    data = self.filter_data_turno(list_hours, fecha_header, fecha_nex, ['t2f'])
+                    self.print_data_lina_t1_t2(data, col, fila, sheet)
+                    col += 1
 
                 if data and not len(data) > 1:
                     info_1 = [data.fecha_time, data.fecha_time - timedelta(hours=5), data.type_mar, data.turno]
