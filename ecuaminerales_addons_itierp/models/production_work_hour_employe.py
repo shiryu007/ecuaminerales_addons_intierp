@@ -37,6 +37,7 @@ class ProductionWorkHourEmployee(models.Model):
                               ('tt2', 'Turno Doble'),
                               ('morning', 'Mañana'),
                               ('late', 'Tarde'),
+                              ('seguido', 'Turno Unico'),
                               ('tt2', 'Turno Doble'),
                               ('no', 'SIN TURNO')], default="no",
                              string="Tipo")

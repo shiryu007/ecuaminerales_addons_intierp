@@ -246,6 +246,19 @@ class ProductionWorkHour(models.Model):
                     antes.turno = 'morning'
                 antes.type_mar = 'old'
                 return True
+        resource_5h_14_h = self.env.ref('ecuaminerales_addons_itierp.resource_5h_14_h')
+        if ahora.resource_calendar_id == resource_5h_14_h:
+            if 4 <= f_antes.hour <= 7 and f_ahora.hour >= 14:
+                antes.type_mar = 'income'
+                ahora.type_mar = 'exit'
+                antes.turno = 'seguido'
+                ahora.turno = 'seguido'
+                return True
+
+            if (minutes / 60) > 10:
+                antes.turno = 'seguido'
+                antes.type_mar = 'old'
+                return True
 
     def turnos_rotativos_html_insertion(self):
         if not self.hour_production_ids:
