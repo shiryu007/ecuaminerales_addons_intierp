@@ -75,7 +75,13 @@
                                 <field name="turnos_ocho_horas" readonly="1" force_save="1"/>
                             </div>
                         </page>
-                        <page string="Filtrar Información">
+                        <page string="6h00-14h00" attrs="{'invisible': [('turnos_seguido','=',False)]}">
+                            <div style="margin-bottom:0px;">
+                                <ul>
+                                    <li class="text-warning">EN AMARILLO: MARCACIONES A REVISAR</li>
+                                </ul>
+                                <field name="turnos_seguido" readonly="1" force_save="1"/>
+                            </div>
                         </page>
                     </notebook>
                 </sheet>

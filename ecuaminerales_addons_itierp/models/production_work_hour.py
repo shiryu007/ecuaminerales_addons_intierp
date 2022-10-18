@@ -40,6 +40,7 @@ class ProductionWorkHour(models.Model):
     number_of_days = fields.Integer('Numero de Dias')
     turnos_rotativos_html = fields.Html('Turnos Rotativos')
     turnos_ocho_horas = fields.Html('8H00-17H00')
+    turnos_seguido = fields.Html('6h00-14h00')
     file = fields.Binary('document')
 
     def _compute_count_registers(self):
@@ -306,6 +307,11 @@ class ProductionWorkHour(models.Model):
         return self.hour_production_ids.filtered(
             lambda x: x.resource_calendar_id == ocho_horas_cal and x.turno != 'no')
 
+    def _get_data_filter_seguido(self):
+        ocho_horas_cal = self.env.ref('ecuaminerales_addons_itierp.resource_5h_14_h')
+        return self.hour_production_ids.filtered(
+            lambda x: x.resource_calendar_id == ocho_horas_cal and x.turno != 'no')
+
     def turnos_ocho_horas_html_insertion(self):
         if not self.hour_production_ids:
             self.turnos_ocho_horas = ""
@@ -344,12 +350,46 @@ class ProductionWorkHour(models.Model):
                     html_text += """<th class="text-danger">X</th>"""
         self.turnos_ocho_horas = html_text + """</tbody></table>"""
 
+    def turnos_seguido_html_insertion(self):
+        if not self.hour_production_ids:
+            self.turnos_seguido = ""
+            return True
+        data_filter = self._get_data_filter_seguido()
+        if not data_filter:
+            self.turnos_seguido = ""
+            return True
+        html_text = """<table class="o_list_view table table-sm table-hover table-striped o_list_view_ungrouped">
+                                        <thead>
+                                        <tr><th>Empleado</th>
+                                        """
+        days = self._get_days_header(data_filter)
+        for day in days:
+            html_text += """<th>%s</th>""" % day.strftime('%d-%m')
+        html_text += """</thead>"""
+        for employee_id in data_filter.mapped('employee_id').sorted('name'):
+            html_text += """<tr><th>%s</th>""" % employee_id.display_name
+            list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            for day in days:
+                horas = list_hours.filtered(
+                    lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
+                horas = horas.sorted('fecha_time')
+                if len(horas) == 2:
+                    h1 = horas[1].fecha_time - horas[0].fecha_time
+                    html_text += """<th>%s</th>""" % round(h1.total_seconds() / 60 / 60, 2)
+                elif horas:
+                    h1 = horas[-1].fecha_time - horas[0].fecha_time
+                    html_text += """<th class="text-warning">%s</th>""" % round(h1.total_seconds() / 60 / 60, 2)
+                else:
+                    html_text += """<th class="text-danger">X</th>"""
+        self.turnos_seguido = html_text + """</tbody></table>"""
+
     def delete_duplicates(self):
         self.hour_production_ids = self.hour_production_ids.filtered(lambda x: not x.delete)
         self.purge_data()
         self.state = 'purify'
         self.turnos_rotativos_html_insertion()
         self.turnos_ocho_horas_html_insertion()
+        self.turnos_seguido_html_insertion()
 
     def print_header_excel(self, sheet, format_center):
         sheet.set_column(0, 0, 45)
