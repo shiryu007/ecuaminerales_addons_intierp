@@ -283,13 +283,21 @@ class ProductionWorkHour(models.Model):
             html_text += """</tr>"""
         self.turnos_rotativos_html = html_text + """</tbody></table>"""
 
+    def _get_days_header(self, data_filter):
+        days = data_filter.sorted('fecha_time').mapped('fecha_time')
+        days = [(x - timedelta(hours=5)).replace(hour=0, second=0, minute=0) for x in days]
+        return sorted(set(days))
+
+    def _get_data_filter(self):
+        ocho_horas_cal = self.env.ref('ecuaminerales_addons_itierp.resource_ocho_horas_1_almuerzo')
+        return self.hour_production_ids.filtered(
+            lambda x: x.resource_calendar_id == ocho_horas_cal and x.turno != 'no')
+
     def turnos_ocho_horas_html_insertion(self):
         if not self.hour_production_ids:
             self.turnos_ocho_horas = ""
             return True
-        ocho_horas_cal = self.env.ref('ecuaminerales_addons_itierp.resource_ocho_horas_1_almuerzo')
-        data_filter = self.hour_production_ids.filtered(
-            lambda x: x.resource_calendar_id == ocho_horas_cal and x.turno != 'no')
+        data_filter = self._get_data_filter()
         if not data_filter:
             self.turnos_ocho_horas = ""
             return True
@@ -298,9 +306,7 @@ class ProductionWorkHour(models.Model):
                                         <thead>
                                         <tr><th>Empleado</th>
                                         """
-        days = data_filter.sorted('fecha_time').mapped('fecha_time')
-        days = [x.replace(hour=0, second=0, minute=0) for x in days]
-        days = sorted(set(days))
+        days = self._get_days_header(data_filter)
         for day in days:
             html_text += """<th>%s</th>""" % day.strftime('%d-%m')
         html_text += """</thead>"""
@@ -308,7 +314,8 @@ class ProductionWorkHour(models.Model):
             html_text += """<tr><th>%s</th>""" % employee_id.display_name
             list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
             for day in days:
-                horas = list_hours.filtered(lambda x: x.fecha_time.strftime('%d-%m') == day.strftime('%d-%m'))
+                horas = list_hours.filtered(
+                    lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
                 horas = horas.sorted('fecha_time')
                 if len(horas) == 4:
                     h1 = horas[1].fecha_time - horas[0].fecha_time
@@ -484,6 +491,68 @@ class ProductionWorkHour(models.Model):
             sheet.write(fila, col, '')
             return 0, 0
 
+    def get_horas_extras_hora(self, horas):
+        horas = round(horas.total_seconds() / 60 / 60, 2)
+        extra = horas - 8
+        if 0 < extra <= TIEMPO_NO_EXTRA:
+            extra = 0
+        return horas, extra
+
+    def print_header_almuerzo_excel(self, sheet, format_center):
+        sheet.set_column(0, 0, 45)
+        sheet.write(0, 0, "Empleado", format_center)
+        data_filter = self._get_data_filter()
+        days = self._get_days_header(data_filter)
+        count = 1
+        for day in days:
+            sheet.set_column(0, count, 5)
+            sheet.write(0, count, day.strftime('%d-%m'), format_center)
+            count += 1
+        sheet.write(0, count, "TOTAL", format_center)
+        count += 1
+        sheet.write(0, count, "EXTRAS", format_center)
+
+    def excel_turnos_almuerzo(self, sheet, format_center):
+        data_filter = self._get_data_filter()
+        days = self._get_days_header(data_filter)
+        fila = 1
+        for employee_id in data_filter.mapped('employee_id').sorted('name'):
+            col = 0
+            sheet.write(fila, col, employee_id.display_name, format_center)
+            list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            total = 0
+            ex = 0
+            for day in days:
+                col += 1
+                horas = list_hours.filtered(
+                    lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
+                if len(horas) == 4:
+                    h1 = horas[1].fecha_time - horas[0].fecha_time
+                    h1 += horas[3].fecha_time - horas[2].fecha_time
+                    horas, extra = self.get_horas_extras_hora(h1)
+                    total += horas
+                    ex += extra
+                    sheet.write(fila, col, horas)
+                elif len(horas) == 2:
+                    h1 = horas[1].fecha_time - horas[0].fecha_time
+                    horas, extra = self.get_horas_extras_hora(h1)
+                    total += horas
+                    ex += extra
+                    sheet.write(fila, col, horas)
+                elif horas:
+                    h1 = horas[-1].fecha_time - horas[0].fecha_time
+                    horas, extra = self.get_horas_extras_hora(h1)
+                    total += horas
+                    ex += extra
+                    sheet.write(fila, col, horas)
+                else:
+                    sheet.write(fila, col, "")
+            col += 1
+            sheet.write(fila, col, total)
+            col += 1
+            sheet.write(fila, col, ex)
+            fila += 1
+
     @api.multi
     def print_excel_report(self):
         fp = BytesIO()
@@ -492,6 +561,9 @@ class ProductionWorkHour(models.Model):
         format_center = workbook.add_format({'bold': True, 'align': 'vcenter'})
         self.print_header_excel(sheet, format_center)
         self.excel_turnos_rotativos(sheet, format_center)
+        sheet1 = workbook.add_worksheet('8H00-17H00')
+        self.print_header_almuerzo_excel(sheet1, format_center)
+        self.excel_turnos_almuerzo(sheet1, format_center)
         return self.return_exel_report(fp, workbook)
 
     def return_exel_report(self, fp, workbook):
