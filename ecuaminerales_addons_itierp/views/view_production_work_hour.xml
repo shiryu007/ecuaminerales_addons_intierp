@@ -65,6 +65,16 @@
                                 <field name="turnos_rotativos_html" readonly="1" force_save="1"/>
                             </div>
                         </page>
+                        <page string="8H00-17H00" attrs="{'invisible': [('turnos_ocho_horas','=',False)]}">
+                            <div style="margin-bottom:0px;">
+                                <ul>
+                                    <li class="text-success">EN VERDE: MARCACIONES CON ALMUERZO</li>
+                                    <li class="text-info">EN AZUL: MARCACIONES SIN ALMUERZO</li>
+                                    <li class="text-warning">EN AMARILLO: MARCACIONES A REVISAR</li>
+                                </ul>
+                                <field name="turnos_ocho_horas" readonly="1" force_save="1"/>
+                            </div>
+                        </page>
                         <page string="Filtrar Información">
                         </page>
                     </notebook>
