@@ -153,6 +153,10 @@ class ProductionWorkHour(models.Model):
             self.number_of_days = (self.fecha_fin - self.fecha_inicio).days
 
     def detectar_ingreso_salida(self, antes, ahora, minutes):
+        f_antes = antes.fecha_time - timedelta(hours=5)
+        f_ahora = ahora.fecha_time - timedelta(hours=5)
+        if antes.turno != 'no':
+            return True
         # TURNO ROTATIVOS
         sales_journal_id = self.env.ref('ecuaminerales_addons_itierp.resource_rotativos')
         if ahora.resource_calendar_id == sales_journal_id:
@@ -161,12 +165,6 @@ class ProductionWorkHour(models.Model):
             # LUNES-VIERNES	 | 06H00 - 14H00   |	14H00 - 22H00	| 22H00 - 06H00
             # SÁBADO	     |06H00 - 18H00	   |    LIBRE	        | 18H00 - 06H00
             # DOMINGO	     |06H00 - 18H00    |	18H00 - 06H00	| LIBRE
-            f_antes = antes.fecha_time - timedelta(hours=5)
-            f_ahora = ahora.fecha_time - timedelta(hours=5)
-            if f_antes.day == 26:
-                print("To ca ver que pasa aca")
-            if antes.turno != 'no':
-                return True
             if f_antes.weekday() in [calendar.MONDAY, calendar.TUESDAY, calendar.WEDNESDAY, calendar.THURSDAY,
                                      calendar.FRIDAY]:
                 if (minutes / 60) > 14:
@@ -219,7 +217,35 @@ class ProductionWorkHour(models.Model):
                     antes.turno = 't3f'
                     ahora.turno = 't3f'
                     return True
-            print("Toca ver por que llegas hasta aca....")
+            return False
+        calendar_almuerzo = self.env.ref('ecuaminerales_addons_itierp.resource_ocho_horas_1_almuerzo')
+        if ahora.resource_calendar_id == calendar_almuerzo:
+            if 5 <= f_antes.hour <= 8 and f_ahora.hour <= 14:
+                antes.type_mar = 'income'
+                ahora.type_mar = 'exit'
+                antes.turno = 'morning'
+                ahora.turno = 'morning'
+                return True
+            if 12 <= f_antes.hour <= 15 and f_ahora.hour >= 15:
+                antes.type_mar = 'income'
+                ahora.type_mar = 'exit'
+                antes.turno = 'late'
+                ahora.turno = 'late'
+                return True
+            if 5 <= f_antes.hour <= 8 and f_ahora.hour >= 16:
+                antes.type_mar = 'income'
+                ahora.type_mar = 'exit'
+                antes.turno = 'morning'
+                ahora.turno = 'late'
+                return True
+            if (minutes / 60) > 9:
+                if 15 <= antes.hour >= 16:
+                    antes.turno = 'late'
+                if 5 <= antes.hour >= 9:
+                    antes.turno = 'morning'
+                antes.type_mar = 'old'
+                return True
+            print('Por algo se llega acacc')
 
     def turnos_rotativos_html_insertion(self):
         if not self.hour_production_ids:
@@ -242,7 +268,7 @@ class ProductionWorkHour(models.Model):
             fecha_header = (self.fecha_inicio + timedelta(days=day + 1)).strftime('%d-%m')
 
         html_text += """</thead>"""
-        for employee_id in set(data_filter.mapped('employee_id')):
+        for employee_id in data_filter.mapped('employee_id').sorted('name'):
             list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
             html_text += """<tr><th>%s</th>""" % employee_id.display_name
             fecha_trabajo = self.fecha_inicio.strftime('%d-%m-%y')
