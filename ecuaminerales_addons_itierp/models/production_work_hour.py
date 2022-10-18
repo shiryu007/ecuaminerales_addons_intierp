@@ -547,7 +547,7 @@ class ProductionWorkHour(models.Model):
     def get_horas_extras_hora(self, horas):
         horas = round(horas.total_seconds() / 60 / 60, 2)
         extra = horas - 8
-        if 0 < extra <= TIEMPO_NO_EXTRA:
+        if extra < TIEMPO_NO_EXTRA:
             extra = 0
         return horas, extra
 
@@ -558,8 +558,22 @@ class ProductionWorkHour(models.Model):
         days = self._get_days_header(data_filter)
         count = 1
         for day in days:
-            sheet.set_column(0, count, 5)
+            sheet.set_column(count, count, 5)
             sheet.write(0, count, day.strftime('%d-%m'), format_center)
+            count += 1
+        sheet.write(0, count, "TOTAL", format_center)
+        count += 1
+        sheet.write(0, count, "EXTRAS", format_center)
+
+    def print_header_seguido_excel(self, sheet, format_center):
+        sheet.set_column(0, 0, 45)
+        sheet.write(0, 0, "Empleado", format_center)
+        data_filter = self._get_data_filter_seguido()
+        days = self._get_days_header(data_filter)
+        count = 1
+        for day in days:
+            sheet.write(0, count, day.strftime('%d-%m'), format_center)
+            sheet.set_column(count, count + 1, 5)
             count += 1
         sheet.write(0, count, "TOTAL", format_center)
         count += 1
@@ -606,6 +620,40 @@ class ProductionWorkHour(models.Model):
             sheet.write(fila, col, ex)
             fila += 1
 
+    def excel_turnos_seguido(self, sheet, format_center):
+        data_filter = self._get_data_filter_seguido()
+        days = self._get_days_header(data_filter)
+        fila = 1
+        for employee_id in data_filter.mapped('employee_id').sorted('name'):
+            col = 0
+            sheet.write(fila, col, employee_id.display_name, format_center)
+            list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            total = 0
+            ex = 0
+            for day in days:
+                col += 1
+                horas = list_hours.filtered(
+                    lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
+                if len(horas) == 2:
+                    h1 = horas[1].fecha_time - horas[0].fecha_time
+                    horas, extra = self.get_horas_extras_hora(h1)
+                    total += horas
+                    ex += extra
+                    sheet.write(fila, col, horas)
+                elif horas:
+                    h1 = horas[-1].fecha_time - horas[0].fecha_time
+                    horas, extra = self.get_horas_extras_hora(h1)
+                    total += horas
+                    ex += extra
+                    sheet.write(fila, col, horas)
+                else:
+                    sheet.write(fila, col, "")
+            col += 1
+            sheet.write(fila, col, total)
+            col += 1
+            sheet.write(fila, col, ex)
+            fila += 1
+
     @api.multi
     def print_excel_report(self):
         fp = BytesIO()
@@ -617,6 +665,9 @@ class ProductionWorkHour(models.Model):
         sheet1 = workbook.add_worksheet('8H00-17H00')
         self.print_header_almuerzo_excel(sheet1, format_center)
         self.excel_turnos_almuerzo(sheet1, format_center)
+        sheet2 = workbook.add_worksheet('6h00-14h00')
+        self.print_header_seguido_excel(sheet2, format_center)
+        self.excel_turnos_seguido(sheet2, format_center)
         return self.return_exel_report(fp, workbook)
 
     def return_exel_report(self, fp, workbook):
