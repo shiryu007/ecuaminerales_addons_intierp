@@ -53,8 +53,13 @@ class ProductionWorkHour(models.Model):
             'type': 'ir.actions.act_window',
             'view_mode': 'tree,form',
             'res_model': 'production.work.hour.employee',
+            'context': {'default_production_work_hour': self.id},
             'domain': [('id', 'in', self.hour_production_ids.ids)],
         }
+
+    @api.multi
+    def change_to_draft(self):
+        self.state = 'draft'
 
     @api.model
     def create(self, vals):

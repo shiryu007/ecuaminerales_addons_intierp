@@ -14,6 +14,7 @@
             <form string="bodega">
                 <header>
                     <field name="state" widget="statusbar"/>
+                    <button type="object" states="load,purify" name="change_to_draft" string="Enviar a Borrador"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
