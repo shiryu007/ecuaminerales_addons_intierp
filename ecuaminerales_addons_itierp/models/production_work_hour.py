@@ -346,7 +346,7 @@ class ProductionWorkHour(models.Model):
                     h1 += horas[3].fecha_time - horas[2].fecha_time
                     html_text += """<th class="text-success">%s</th>""" % round(h1.total_seconds() / 60 / 60, 2)
                 elif len(horas) == 2:
-                    h1 = horas[1].fecha_time - horas[0].fecha_time
+                    h1 = (horas[1].fecha_time - timedelta(hours=1)) - horas[0].fecha_time
                     html_text += """<th class="text-info">%s</th>""" % round(h1.total_seconds() / 60 / 60, 2)
                 elif horas:
                     h1 = horas[-1].fecha_time - horas[0].fecha_time
@@ -606,7 +606,7 @@ class ProductionWorkHour(models.Model):
                     ex += extra
                     sheet.write(fila, col, horas)
                 elif len(horas) == 2:
-                    h1 = horas[1].fecha_time - horas[0].fecha_time
+                    h1 = (horas[1].fecha_time - timedelta(hours=5)) - horas[0].fecha_time
                     horas, extra = self.get_horas_extras_hora(h1)
                     total += horas
                     ex += extra
