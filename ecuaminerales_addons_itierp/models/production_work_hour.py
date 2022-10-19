@@ -784,6 +784,7 @@ class ProductionWorkHour(models.Model):
             total_suple = 0
             total_extra = 0
             for day in days:
+
                 horas = list_hours.filtered(
                     lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
                 if len(horas) == 4:
@@ -792,6 +793,8 @@ class ProductionWorkHour(models.Model):
                     horas, extra = self.get_horas_extras_hora(h1)
                     total_horas_m += horas
                     total_extra += int(extra)
+                    if day.weekday() in [calendar.SATURDAY, calendar.SUNDAY]:
+                        total_extraordinarias += int(horas)
                     if int(extra) > 2:
                         total_nocturnas += int(extra) - 2
                     if 0 < int(extra) <= 2:
@@ -802,6 +805,8 @@ class ProductionWorkHour(models.Model):
                     total_horas_m += horas
                     total_extra += int(extra)
                     total_extra += int(extra)
+                    if day.weekday() in [calendar.SATURDAY, calendar.SUNDAY]:
+                        total_extraordinarias += int(horas)
                     if int(extra) > 2:
                         total_nocturnas += int(extra) - 2
                     if 0 < int(extra) <= 2:
