@@ -685,6 +685,9 @@ class ProductionWorkHour(models.Model):
         sheet.set_column(col, col, 50)
         sheet.write(0, col, "EMPLEADO", format_center)
         col += 1
+        sheet.set_column(col, col, 20)
+        sheet.write(0, col, "JORNADA", format_center)
+        col += 1
         sheet.set_column(col, col, 14)
         sheet.write(0, col, "HORAS", format_center)
         col += 1
@@ -701,15 +704,16 @@ class ProductionWorkHour(models.Model):
         sheet.write(0, col, "EXTRAS", format_center)
         if not self.hour_production_ids:
             return True
+        list_data = self.hour_production_ids.filtered(lambda x: x.type_mar in ['exit', 'income'])
         jornada = self.env.ref('ecuaminerales_addons_itierp.resource_rotativos')
-        list_data = self.hour_production_ids.filtered(
-            lambda x: x.type_mar in ['exit', 'income'] and x.resource_calendar_id == jornada)
+        list_data = list_data.filtered(lambda x: x.resource_calendar_id == jornada)
 
         fila = 1
         for employee_id in list_data.mapped('employee_id').sorted('name'):
-            horas_nocturna = [19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6]
             col = 0
             sheet.write(fila, col, employee_id.display_name)
+            col += 1
+            sheet.write(fila, col, employee_id.resource_calendar_id.display_name)
             col += 1
             list_hours = list_data.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
             count = 1
@@ -751,6 +755,57 @@ class ProductionWorkHour(models.Model):
                 total_horas_m += horas
                 total_extra += round(extra)
                 count += 1
+            sheet.write(fila, col, total_horas_m)
+            col += 1
+            sheet.write(fila, col, total_nocturnas)
+            col += 1
+            sheet.write(fila, col, total_suple)
+            col += 1
+            sheet.write(fila, col, total_extraordinarias)
+            col += 1
+            sheet.write(fila, col, total_extra)
+            col += 1
+            fila += 1
+
+        data_filter = self._get_data_filter()
+        data_filter |= self._get_data_filter_seguido()
+        data_filter = data_filter.filtered(lambda x: x.type_mar in ['exit', 'income'])
+        days = self._get_days_header(data_filter)
+        for employee_id in data_filter.mapped('employee_id').sorted('name'):
+            col = 0
+            sheet.write(fila, col, employee_id.display_name)
+            col += 1
+            sheet.write(fila, col, employee_id.resource_calendar_id.display_name)
+            col += 1
+            list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            total_horas_m = 0
+            total_nocturnas = 0
+            total_extraordinarias = 0
+            total_suple = 0
+            total_extra = 0
+            for day in days:
+                horas = list_hours.filtered(
+                    lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
+                if len(horas) == 4:
+                    h1 = horas[1].fecha_time - horas[0].fecha_time
+                    h1 += horas[3].fecha_time - horas[2].fecha_time
+                    horas, extra = self.get_horas_extras_hora(h1)
+                    total_horas_m += horas
+                    total_extra += int(extra)
+                    if int(extra) > 2:
+                        total_nocturnas += int(extra) - 2
+                    if 0 < int(extra) <= 2:
+                        total_suple += int(extra)
+                elif len(horas) == 2:
+                    h1 = (horas[1].fecha_time - timedelta(hours=5)) - (horas[0].fecha_time - timedelta(hours=5))
+                    horas, extra = self.get_horas_extras_hora(h1)
+                    total_horas_m += horas
+                    total_extra += int(extra)
+                    total_extra += int(extra)
+                    if int(extra) > 2:
+                        total_nocturnas += int(extra) - 2
+                    if 0 < int(extra) <= 2:
+                        total_suple += int(extra)
             sheet.write(fila, col, total_horas_m)
             col += 1
             sheet.write(fila, col, total_nocturnas)
