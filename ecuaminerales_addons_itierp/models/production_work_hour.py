@@ -675,6 +675,95 @@ class ProductionWorkHour(models.Model):
         self.excel_turnos_seguido(sheet2, format_center)
         return self.return_exel_report(fp, workbook)
 
+    @api.multi
+    def print_excel_report_resumen(self):
+        fp = BytesIO()
+        workbook = xlsxwriter.Workbook(fp)
+        sheet = workbook.add_worksheet('RESUMEN DE HORAS')
+        format_center = workbook.add_format({'bold': True, 'align': 'vcenter'})
+        col = 0
+        sheet.set_column(col, col, 50)
+        sheet.write(0, col, "EMPLEADO", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "HORAS", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "NOCTURNAS", format_center)
+        col += 1
+        sheet.set_column(col, col, 16)
+        sheet.write(0, col, "SUPLEMENTARIAS", format_center)
+        col += 1
+        sheet.set_column(col, col, 17)
+        sheet.write(0, col, "EXTRAORDINARIAS", format_center)
+        col += 1
+        sheet.set_column(col, col, 17)
+        sheet.write(0, col, "EXTRAS", format_center)
+        if not self.hour_production_ids:
+            return True
+        jornada = self.env.ref('ecuaminerales_addons_itierp.resource_rotativos')
+        list_data = self.hour_production_ids.filtered(
+            lambda x: x.type_mar in ['exit', 'income'] and x.resource_calendar_id == jornada)
+
+        fila = 1
+        for employee_id in list_data.mapped('employee_id').sorted('name'):
+            horas_nocturna = [19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6]
+            col = 0
+            sheet.write(fila, col, employee_id.display_name)
+            col += 1
+            list_hours = list_data.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            count = 1
+            total_horas_m = 0
+            total_nocturnas = 0
+            total_extraordinarias = 0
+            total_suple = 0
+            total_extra = 0
+            for ahora in list_hours[1:].sorted('fecha_time'):
+                if ahora.type_mar == 'income':
+                    count += 1
+                    continue
+                antes = list_hours[count - 1]
+
+                f_antes = antes.fecha_time - timedelta(hours=5)
+                f_ahora = ahora.fecha_time - timedelta(hours=5)
+                diferencia = f_ahora - f_antes
+                horas = diferencia.total_seconds() / 60 / 60
+                extra = 0
+                if ahora.turno in ['t1', 't2', 't3']:
+                    extra = int(horas) - 8 if int(horas) > 8 else 0
+                if ahora.turno in ['tt2', 't1f', 't2f', 't3f']:
+                    extra = int(horas) - 12 if int(horas) > 12 else 0
+
+                if ahora.turno in ['t2', 'tt2']:
+                    if f_antes.hour <= 19 and f_ahora.hour >= 20 or f_antes.hour <= 19 and f_ahora.hour <= 6:
+                        f_aux = f_antes.replace(hour=19, minute=0, second=0)
+                        total_nocturnas += int((f_ahora - f_aux).total_seconds() / 60 / 60)
+                if ahora.turno in ['t3']:
+                    f_aux = f_ahora.replace(hour=6, minute=0, second=0)
+                    total_nocturnas += int((f_aux - f_antes).total_seconds() / 60 / 60)
+                if ahora.turno in ['t1f', 't2f', 't3f']:
+                    total_extraordinarias += int(horas)
+                if extra > 0:
+                    if ahora.turno in ['t1']:
+                        f_aux = f_ahora.replace(hour=14, minute=0, second=0)
+                        total_suple += int((f_ahora - f_aux).total_seconds() / 60 / 60)
+
+                total_horas_m += horas
+                total_extra += round(extra)
+                count += 1
+            sheet.write(fila, col, total_horas_m)
+            col += 1
+            sheet.write(fila, col, total_nocturnas)
+            col += 1
+            sheet.write(fila, col, total_suple)
+            col += 1
+            sheet.write(fila, col, total_extraordinarias)
+            col += 1
+            sheet.write(fila, col, total_extra)
+            col += 1
+            fila += 1
+        return self.return_exel_report(fp, workbook)
+
     def return_exel_report(self, fp, workbook):
         workbook.close()
         self.file = base64.encodestring(fp.getvalue())
