@@ -745,7 +745,7 @@ class ProductionWorkHour(models.Model):
                 if ahora.turno in ['t3']:
                     f_aux = f_ahora.replace(hour=6, minute=0, second=0)
                     total_nocturnas += int((f_aux - f_antes).total_seconds() / 60 / 60)
-                if ahora.turno in ['t1f', 't2f', 't3f']:
+                if ahora.turno in ['t1f', 't2f', 't3f'] or ahora.festivo or antes.festivo:
                     total_extraordinarias += int(horas)
                 if extra > 0:
                     if ahora.turno in ['t1']:
@@ -784,29 +784,30 @@ class ProductionWorkHour(models.Model):
             total_suple = 0
             total_extra = 0
             for day in days:
-
                 horas = list_hours.filtered(
                     lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
+                if not horas:
+                    continue
                 if len(horas) == 4:
                     h1 = horas[1].fecha_time - horas[0].fecha_time
                     h1 += horas[3].fecha_time - horas[2].fecha_time
-                    horas, extra = self.get_horas_extras_hora(h1)
-                    total_horas_m += horas
-                    total_extra += int(extra)
-                    if day.weekday() in [calendar.SATURDAY, calendar.SUNDAY]:
-                        total_extraordinarias += int(horas)
+                    h, extra = self.get_horas_extras_hora(h1)
+                    total_horas_m += h
+                    total_extra += int(h)
+                    if day.weekday() in [calendar.SATURDAY, calendar.SUNDAY] or horas.filtered('festivo'):
+                        total_extraordinarias += int(h)
                     if int(extra) > 2:
                         total_nocturnas += int(extra) - 2
                     if 0 < int(extra) <= 2:
                         total_suple += int(extra)
                 elif len(horas) == 2:
                     h1 = (horas[1].fecha_time - timedelta(hours=5)) - (horas[0].fecha_time - timedelta(hours=5))
-                    horas, extra = self.get_horas_extras_hora(h1)
-                    total_horas_m += horas
+                    h, extra = self.get_horas_extras_hora(h1)
+                    total_horas_m += h
                     total_extra += int(extra)
                     total_extra += int(extra)
-                    if day.weekday() in [calendar.SATURDAY, calendar.SUNDAY]:
-                        total_extraordinarias += int(horas)
+                    if day.weekday() in [calendar.SATURDAY, calendar.SUNDAY] or horas.filtered('festivo'):
+                        total_extraordinarias += int(h)
                     if int(extra) > 2:
                         total_nocturnas += int(extra) - 2
                     if 0 < int(extra) <= 2:

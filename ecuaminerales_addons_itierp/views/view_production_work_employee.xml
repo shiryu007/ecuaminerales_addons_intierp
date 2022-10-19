@@ -21,6 +21,7 @@
                 <field name="dif_h"/>
                 <field name="type_mar"/>
                 <field name="delete"/>
+                <field name="festivo"/>
                 <field name="production_work_hour" invisible="1"/>
             </tree>
         </field>
