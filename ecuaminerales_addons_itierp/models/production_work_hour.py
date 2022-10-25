@@ -11,7 +11,7 @@ from io import BytesIO
 
 # NUMERO MINUTOS DIFERENCIA
 MINUTOS_DUPLICADO = 7
-TIEMPO_NO_EXTRA = 1
+TIEMPO_NO_EXTRA = 0.50
 
 
 class ProductionWorkHour(models.Model):
@@ -158,6 +158,17 @@ class ProductionWorkHour(models.Model):
             self.fecha_inicio = min(self.hour_production_ids.mapped('fecha_time'))
             self.fecha_fin = max(self.hour_production_ids.mapped('fecha_time'))
             self.number_of_days = (self.fecha_fin - self.fecha_inicio).days
+        turno = self.env.ref('ecuaminerales_addons_itierp.resource_rotativos')
+        marcaciones_old = self.hour_production_ids.filtered(
+            lambda x: x.type_mar in ['old', 'error'] and x.resource_calendar_id == turno)
+        marcaciones1 = marcaciones_old.filtered(
+            lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m-%y') == self.fecha_inicio.strftime(
+                '%d-%m-%y'))
+        marcaciones2 = marcaciones_old.filtered(
+            lambda x: x.fecha_time - timedelta(hours=5) >= self.fecha_fin - timedelta(days=1, hours=5))
+        total = marcaciones1
+        total |= marcaciones2
+        total.write({'delete': True})
 
     def detectar_ingreso_salida(self, antes, ahora, minutes):
         f_antes = antes.fecha_time - timedelta(hours=5)
