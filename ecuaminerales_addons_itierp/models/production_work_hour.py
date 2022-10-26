@@ -745,26 +745,46 @@ class ProductionWorkHour(models.Model):
                 horas = diferencia.total_seconds() / 60 / 60
                 extra = 0
                 if ahora.turno in ['t1', 't2', 't3']:
-                    extra = int(horas) - 8 if int(horas) > 8 else 0
+                    tiempo_no_ocho = horas - 8
+                    if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
+                        extra = tiempo_no_ocho
                 if ahora.turno in ['tt2', 't1f', 't2f', 't3f']:
-                    extra = int(horas) - 12 if int(horas) > 12 else 0
+                    tiempo_no_ocho = horas - 12
+                    if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
+                        extra = tiempo_no_ocho
 
-                if ahora.turno in ['t2', 'tt2']:
-                    if f_antes.hour <= 19 and f_ahora.hour >= 20 or f_antes.hour <= 19 and f_ahora.hour <= 6:
-                        f_aux = f_antes.replace(hour=19, minute=0, second=0)
-                        total_nocturnas += int((f_ahora - f_aux).total_seconds() / 60 / 60)
+                if ahora.turno in ['t2']:
+                    if f_antes.hour <= 19 and f_ahora.hour >= 20:
+                        f_aux = f_antes.replace(hour=19, minute=30, second=0)
+                        horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
+                        if 0 < horas_n - 2.5 >= TIEMPO_NO_EXTRA:
+                            total_nocturnas += horas_n
+                        else:
+                            total_nocturnas += 2.5
+                if ahora.turno in ['tt2']:
+                    if f_antes.hour <= 19 and f_ahora.hour >= 20:
+                        f_aux = f_antes.replace(hour=19, minute=30, second=0)
+                        horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
+                        if horas_n - 3 >= TIEMPO_NO_EXTRA:
+                            total_nocturnas += horas_n
+                        else:
+                            total_nocturnas += 3
                 if ahora.turno in ['t3']:
-                    f_aux = f_ahora.replace(hour=6, minute=0, second=0)
-                    total_nocturnas += int((f_aux - f_antes).total_seconds() / 60 / 60)
+                    f_aux = f_ahora.replace(hour=5, minute=30, second=0)
+                    horas_n = (f_aux - f_antes).total_seconds() / 60 / 60
+                    if 0 < horas_n - 7.5 >= TIEMPO_NO_EXTRA:
+                        total_nocturnas += horas_n
+                    else:
+                        total_nocturnas += 7.5
                 if ahora.turno in ['t1f', 't2f', 't3f'] or ahora.festivo or antes.festivo:
-                    total_extraordinarias += int(horas)
+                    total_extraordinarias += horas
                 if extra > 0:
                     if ahora.turno in ['t1']:
                         f_aux = f_ahora.replace(hour=14, minute=0, second=0)
-                        total_suple += int((f_ahora - f_aux).total_seconds() / 60 / 60)
+                        total_suple += round((f_ahora - f_aux).total_seconds() / 60 / 60, 2)
 
                 total_horas_m += horas
-                total_extra += round(extra)
+                total_extra += extra
                 count += 1
             sheet.write(fila, col, total_horas_m)
             col += 1
