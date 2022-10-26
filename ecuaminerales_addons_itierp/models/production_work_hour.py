@@ -758,26 +758,31 @@ class ProductionWorkHour(models.Model):
                         f_aux = f_antes.replace(hour=19, minute=30, second=0)
                         horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
                         if 0 < horas_n - 2.5 >= TIEMPO_NO_EXTRA:
-                            total_nocturnas += horas_n
+                            total_nocturnas += round(horas_n, 2)
                         else:
                             total_nocturnas += 2.5
                 if ahora.turno in ['tt2']:
-                    if f_antes.hour <= 19 and f_ahora.hour >= 20:
-                        f_aux = f_antes.replace(hour=19, minute=30, second=0)
-                        horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
-                        if horas_n - 3 >= TIEMPO_NO_EXTRA:
-                            total_nocturnas += horas_n
-                        else:
-                            total_nocturnas += 3
+                    suple = horas - 8
+                    if 0 < suple - 4 >= TIEMPO_NO_EXTRA:
+                        total_suple += round(suple, 2)
+                    else:
+                        total_suple += 4
+
                 if ahora.turno in ['t3']:
                     f_aux = f_ahora.replace(hour=5, minute=30, second=0)
                     horas_n = (f_aux - f_antes).total_seconds() / 60 / 60
                     if 0 < horas_n - 7.5 >= TIEMPO_NO_EXTRA:
-                        total_nocturnas += horas_n
+                        total_nocturnas += round(horas_n, 2)
                     else:
                         total_nocturnas += 7.5
                 if ahora.turno in ['t1f', 't2f', 't3f'] or ahora.festivo or antes.festivo:
-                    total_extraordinarias += horas
+                    ex = horas - 12
+                    if ex <= 0:
+                        total_extraordinarias = round(horas, 2)
+                    elif ex >= TIEMPO_NO_EXTRA:
+                        total_extraordinarias = round(horas, 2)
+                    else:
+                        total_extraordinarias = 12
                 if extra > 0:
                     if ahora.turno in ['t1']:
                         f_aux = f_ahora.replace(hour=14, minute=0, second=0)
