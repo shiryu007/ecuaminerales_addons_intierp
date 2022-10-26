@@ -778,11 +778,11 @@ class ProductionWorkHour(models.Model):
                 if ahora.turno in ['t1f', 't2f', 't3f'] or ahora.festivo or antes.festivo:
                     ex = horas - 12
                     if ex <= 0:
-                        total_extraordinarias = round(horas, 2)
+                        total_extraordinarias += round(horas, 2)
                     elif ex >= TIEMPO_NO_EXTRA:
-                        total_extraordinarias = round(horas, 2)
+                        total_extraordinarias += round(horas, 2)
                     else:
-                        total_extraordinarias = 12
+                        total_extraordinarias += 12
                 if extra > 0:
                     if ahora.turno in ['t1']:
                         f_aux = f_ahora.replace(hour=14, minute=0, second=0)
