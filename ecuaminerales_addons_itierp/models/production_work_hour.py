@@ -792,13 +792,13 @@ class ProductionWorkHour(models.Model):
                 col += 1
                 sheet.write(fila, col, round(nocturna, 2))
                 suplementaria = 0
-                if ahora.turno in ['tt2']:
+                if ahora.turno in ['tt2'] and not ahora.festivo:
                     suple = horas - 8
                     if 0 < suple - 4 >= TIEMPO_NO_EXTRA:
                         suplementaria = round(suple, 2)
                     else:
                         suplementaria = 4
-                if ahora.turno in ['t1']:
+                if ahora.turno in ['t1'] and not ahora.festivo:
                     suple = horas - 8
                     if 0 < suple >= TIEMPO_NO_EXTRA:
                         suplementaria = round(suple, 2)
