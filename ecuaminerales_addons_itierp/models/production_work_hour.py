@@ -1,3 +1,4 @@
+import fileinput
 from datetime import datetime, timedelta, date
 
 from odoo import api, fields, models
@@ -898,7 +899,18 @@ class ProductionWorkHour(models.Model):
                     horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
                     if 0 < horas_n >= TIEMPO_NO_EXTRA:
                         nocturna = round(horas_n, 2)
-
+                jornada = self.env.ref('ecuaminerales_addons_itierp.resource_ocho_horas_1_almuerzo')
+                f_fin = f_ahora
+                if f_fin.hour > 19:
+                    f_fin = f_fin.replace(hour=19, minute=0, second=0)
+                if horas[0].resource_calendar_id == jornada:
+                    f_aux = f_antes.replace(hour=17, minute=0, second=0)
+                else:
+                    f_aux = f_antes.replace(hour=14, minute=0, second=0)
+                horas_n = (f_aux - f_fin).total_seconds() / 60 / 60
+                if 0 < horas_n >= TIEMPO_NO_EXTRA:
+                    if trabajo > 8:
+                        suplementaria = round(horas_n, 2)
                 col += 1
                 sheet.write(fila, col, round(nocturna, 2))
                 col += 1
