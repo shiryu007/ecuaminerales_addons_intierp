@@ -103,6 +103,7 @@ class ProductionWorkHour(models.Model):
         self.hour_production_ids = data_create
         self.insert_messages(name_not_range, names_no_search)
         self.purge_data()
+        self.purge_data()
         self.state = 'load'
 
     def insert_messages(self, name_not_range, names_no_search):
@@ -165,11 +166,14 @@ class ProductionWorkHour(models.Model):
         marcaciones1 = marcaciones_old.filtered(
             lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m-%y') == self.fecha_inicio.strftime(
                 '%d-%m-%y'))
+        marcaciones1.write({'delete': True})
         marcaciones2 = marcaciones_old.filtered(
-            lambda x: x.fecha_time - timedelta(hours=5) >= self.fecha_fin - timedelta(days=1, hours=5))
-        total = marcaciones1
-        total |= marcaciones2
-        total.write({'delete': True})
+            lambda x: x.fecha_time - timedelta(hours=5) >= self.fecha_fin - timedelta(days=1, hours=5) and x.dif_h >= 3)
+        if not self.hour_production_ids.filtered(lambda x: x.dispositivo == 'CREADO'):
+            for employee_id in marcaciones2.mapped('employee_id'):
+                for item in marcaciones2.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')[-1]:
+                    item_cp = item.copy({'dispositivo': "CREADO"})
+                    item_cp.fecha_time = item_cp.fecha_time + timedelta(hours=8, minutes=10)
 
     def detectar_ingreso_salida(self, antes, ahora, minutes):
         f_antes = antes.fecha_time - timedelta(hours=5)
