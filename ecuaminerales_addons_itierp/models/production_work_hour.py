@@ -687,6 +687,142 @@ class ProductionWorkHour(models.Model):
         return self.return_exel_report(fp, workbook)
 
     @api.multi
+    def print_excel_report_resumen_del(self):
+        fp = BytesIO()
+        workbook = xlsxwriter.Workbook(fp)
+        sheet = workbook.add_worksheet('Turno Rotativos')
+        format_center = workbook.add_format({'bold': True, 'align': 'vcenter'})
+        col = 0
+        sheet.set_column(col, col, 50)
+        sheet.write(0, col, "EMPLEADO", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "TURNO", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "DIA", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "INGRESO", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "SALIDA", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "TRABAJO", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "HORAS", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "NOCTURNAS", format_center)
+        col += 1
+        sheet.set_column(col, col, 16)
+        sheet.write(0, col, "SUPLEMENTARIAS", format_center)
+        col += 1
+        sheet.set_column(col, col, 17)
+        sheet.write(0, col, "EXTRAORDINARIAS", format_center)
+        col += 1
+        if not self.hour_production_ids:
+            return True
+        list_data = self.hour_production_ids.filtered(lambda x: x.type_mar in ['exit', 'income'])
+        jornada = self.env.ref('ecuaminerales_addons_itierp.resource_rotativos')
+        list_data = list_data.filtered(lambda x: x.resource_calendar_id == jornada)
+
+        fila = 1
+        for employee_id in list_data.mapped('employee_id').sorted('name'):
+
+            list_hours = list_data.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            count = 1
+            for ahora in list_hours[1:].sorted('fecha_time'):
+                if ahora.type_mar == 'income':
+                    count += 1
+                    continue
+                col = 0
+                sheet.write(fila, col, employee_id.display_name)
+                antes = list_hours[count - 1]
+                f_antes = antes.fecha_time - timedelta(hours=5)
+                f_ahora = ahora.fecha_time - timedelta(hours=5)
+                diferencia = f_ahora - f_antes
+                horas = round(diferencia.total_seconds() / 60 / 60, 2)
+                if ahora.turno != antes.turno:
+                    print(">>>>>>>>>>>>>>>> HERE <<<<<<<<<<<<<<")
+                col += 1
+                sheet.write(fila, col, ahora.turno)
+                col += 1
+                sheet.write(fila, col, f_antes.strftime('%d-%m-%Y'))
+                col += 1
+                sheet.write(fila, col, f_antes.strftime('%H:%M:%S'))
+                col += 1
+                sheet.write(fila, col, f_ahora.strftime('%H:%M:%S'))
+                col += 1
+                sheet.write(fila, col, horas)
+                trabajo = horas
+                extra = 0
+                if ahora.turno in ['t1', 't2', 't3']:
+                    tiempo_no_ocho = horas - 8
+                    if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
+                        trabajo = horas
+                    else:
+                        trabajo = 8
+                if ahora.turno in ['tt2', 't1f', 't2f', 't3f']:
+                    tiempo_no_ocho = horas - 12
+                    if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
+                        trabajo = horas
+                    else:
+                        trabajo = 12
+                trabajo = round(trabajo, 2)
+                col += 1
+                sheet.write(fila, col, trabajo)
+                nocturna = 0
+                if ahora.turno == 't2':
+                    f_aux = f_antes.replace(hour=19, minute=30, second=0)
+                    horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
+                    if 0 < horas_n - 2.5 >= TIEMPO_NO_EXTRA:
+                        nocturna += round(horas_n, 2)
+                    else:
+                        nocturna += 2.5
+                if ahora.turno == 't3':
+                    f_aux = f_ahora.replace(hour=5, minute=30, second=0)
+                    horas_n = (f_aux - f_antes).total_seconds() / 60 / 60
+                    if 0 < horas_n - 7.5 >= TIEMPO_NO_EXTRA:
+                        nocturna += round(horas_n, 2)
+                    else:
+                        nocturna += 7.5
+                col += 1
+                sheet.write(fila, col, round(nocturna, 2))
+                suplementaria = 0
+                if ahora.turno in ['tt2']:
+                    suple = horas - 8
+                    if 0 < suple - 4 >= TIEMPO_NO_EXTRA:
+                        suplementaria = round(suple, 2)
+                    else:
+                        suplementaria = 4
+                if ahora.turno in ['t1']:
+                    suple = horas - 8
+                    if 0 < suple >= TIEMPO_NO_EXTRA:
+                        suplementaria = round(suple, 2)
+                    else:
+                        suplementaria = 0
+                col += 1
+                sheet.write(fila, col, round(suplementaria, 2))
+                extraordinaria = 0
+                if ahora.turno in ['t1f', 't2f', 't3f'] or ahora.festivo or antes.festivo:
+                    ex = horas - 12
+                    if ex <= 0:
+                        extraordinaria += round(horas, 2)
+                    elif ex >= TIEMPO_NO_EXTRA:
+                        extraordinaria += round(horas, 2)
+                    else:
+                        extraordinaria += 12
+                col += 1
+                sheet.write(fila, col, round(extraordinaria, 2))
+                fila += 1
+                count += 1
+
+        return self.return_exel_report(fp, workbook)
+
+    @api.multi
     def print_excel_report_resumen(self):
         fp = BytesIO()
         workbook = xlsxwriter.Workbook(fp)
