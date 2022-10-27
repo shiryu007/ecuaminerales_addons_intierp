@@ -745,8 +745,6 @@ class ProductionWorkHour(models.Model):
                 f_ahora = ahora.fecha_time - timedelta(hours=5)
                 diferencia = f_ahora - f_antes
                 horas = round(diferencia.total_seconds() / 60 / 60, 2)
-                if ahora.turno != antes.turno:
-                    print(">>>>>>>>>>>>>>>> HERE <<<<<<<<<<<<<<")
                 col += 1
                 sheet.write(fila, col, ahora.turno)
                 col += 1
@@ -819,6 +817,95 @@ class ProductionWorkHour(models.Model):
                 sheet.write(fila, col, round(extraordinaria, 2))
                 fila += 1
                 count += 1
+
+        sheet = workbook.add_worksheet('ADMINISTRACION')
+        format_center = workbook.add_format({'bold': True, 'align': 'vcenter'})
+        col = 0
+        sheet.set_column(col, col, 50)
+        sheet.write(0, col, "EMPLEADO", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "DIA", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "INGRESO", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "SALIDA", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "TRABAJO", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "HORAS", format_center)
+        col += 1
+        sheet.set_column(col, col, 14)
+        sheet.write(0, col, "NOCTURNAS", format_center)
+        col += 1
+        sheet.set_column(col, col, 16)
+        sheet.write(0, col, "SUPLEMENTARIAS", format_center)
+        col += 1
+        sheet.set_column(col, col, 17)
+        sheet.write(0, col, "EXTRAORDINARIAS", format_center)
+        col += 1
+        data_filter = self._get_data_filter()
+        data_filter |= self._get_data_filter_seguido()
+        data_filter = data_filter.filtered(lambda x: x.type_mar in ['exit', 'income'])
+        days = self._get_days_header(data_filter)
+        fila = 1
+        for employee_id in data_filter.mapped('employee_id').sorted('name'):
+            list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            for day in days:
+                horas = list_hours.filtered(
+                    lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
+                if not horas or len(horas) == 1:
+                    continue
+                horas.sorted('fecha_time')
+                f_antes = horas[0].fecha_time - timedelta(hours=5)
+                f_ahora = horas[-1].fecha_time - timedelta(hours=5)
+                diferencia = f_ahora - f_antes
+                horas_ = round(diferencia.total_seconds() / 60 / 60, 2)
+                col = 0
+                sheet.write(fila, col, employee_id.display_name)
+                col += 1
+                sheet.write(fila, col, f_antes.strftime('%d-%m-%Y'))
+                col += 1
+                sheet.write(fila, col, f_antes.strftime('%H:%M:%S'))
+                col += 1
+                sheet.write(fila, col, f_ahora.strftime('%H:%M:%S'))
+                col += 1
+                sheet.write(fila, col, horas_)
+                trabajo = int(horas_)
+                if trabajo == 9:
+                    trabajo = 8
+                tiempo_no_ocho = horas_ - 9
+                if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
+                    trabajo = horas_
+                if tiempo_no_ocho < 0:
+                    tiempo_no_ocho = horas_ - 8
+                    if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
+                        trabajo = horas_
+                trabajo = round(trabajo, 2)
+                col += 1
+                sheet.write(fila, col, trabajo)
+                nocturna = 0
+                extraordinaria = 0
+                suplementaria = 0
+                if f_antes.weekday() in [calendar.SATURDAY, calendar.SUNDAY] or horas.filtered('festivo'):
+                    extraordinaria = trabajo
+                else:
+                    f_aux = f_antes.replace(hour=19, minute=0, second=0)
+                    horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
+                    if 0 < horas_n >= TIEMPO_NO_EXTRA:
+                        nocturna = round(horas_n, 2)
+
+                col += 1
+                sheet.write(fila, col, round(nocturna, 2))
+                col += 1
+                sheet.write(fila, col, round(suplementaria, 2))
+                col += 1
+                sheet.write(fila, col, round(extraordinaria, 2))
+                fila += 1
 
         return self.return_exel_report(fp, workbook)
 
