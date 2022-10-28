@@ -29,8 +29,8 @@ class ProductionWorkHour(models.Model):
                               ('confirm', 'Confirmar'),
                               ('posted', 'Pagado')],
                              readonly=True, default='draft', store=True, string="Estado", track_visibility='onchange')
-    search_selection = fields.Selection([('code', 'Codigo Relog'), ('name', 'Nombre')],
-                                        default='code', store=True, string="Ubicar empleado por",
+    search_selection = fields.Selection([('code', 'Codigo Reloj'), ('name', 'Nombre')],
+                                        default='name', store=True, string="Ubicar empleado por",
                                         track_visibility='onchange')
     hour_production_ids = fields.One2many('production.work.hour.employee', 'production_work_hour', 'Lista de Horas')
     message = fields.Html("Mensaje de Error")
@@ -75,9 +75,9 @@ class ProductionWorkHour(models.Model):
         data = [[sheet.cell_value(r, c) for c in range(sheet.ncols)] for r in range(sheet.nrows)]
         if data[0] == ['', '', '', '', '', '']:
             data.remove(data[0])
-        if data[0] != ['Nombre', 'Número de empleado', 'Departamento', 'Fecha', 'Hora', 'Dispositivo']:
-            raise ValidationError("""Recurde que el archivo debe contener la siguiente estructura  \n
-            ['Nombre', 'Número de empleado', 'Departamento', 'Fecha', 'Hora', 'Dispositivo']""")
+        # if data[0] != ['Nombre', 'Número de empleado', 'Departamento', 'Fecha', 'Hora', 'Dispositivo']:
+        #     raise ValidationError("""Recurde que el archivo debe contener la siguiente estructura  \n
+        #     ['Nombre', 'Número de empleado', 'Departamento', 'Fecha', 'Hora', 'Dispositivo']""")
         self.hour_production_ids = False
         names_no_search = []
         name_not_range = []
