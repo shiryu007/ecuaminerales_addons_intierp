@@ -10,7 +10,7 @@ class ProductionWorkHourEmployee(models.Model):
     _description = 'Modulo de Horas en producción'
 
     employee_id = fields.Many2one('hr.employee', string='Empleado')
-    codigo_clock = fields.Integer("Código Relog", store=True, related='employee_id.codigo_clock', editable=True)
+    codigo_clock = fields.Integer("Código Reloj", store=True, related='employee_id.codigo_clock', editable=True)
     resource_calendar_id = fields.Many2one('resource.calendar', 'Jornada de Trabajo', store=True,
                                            related='employee_id.resource_calendar_id')
 
