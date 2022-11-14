@@ -1005,7 +1005,7 @@ class ProductionWorkHour(models.Model):
                     if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
                         extra = tiempo_no_ocho
                 if ahora.turno in ['tt2', 't1f', 't2f', 't3f']:
-                    tiempo_no_ocho = horas - 12
+                    tiempo_no_ocho = horas - 12.50
                     if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
                         extra = tiempo_no_ocho
 
