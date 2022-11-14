@@ -64,7 +64,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Datos Relog">
+                        <page string="Datos Reloj">
                             <div class="alert alert-info" role="alert" style="margin-bottom:0px;"
                                  attrs="{'invisible': [('message','=',False)]}">
                                 <h5 class="text-center">
