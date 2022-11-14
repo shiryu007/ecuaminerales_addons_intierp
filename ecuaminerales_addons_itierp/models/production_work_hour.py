@@ -554,6 +554,8 @@ class ProductionWorkHour(models.Model):
             return 0
         if turno in ['t1f', 't2f', 't3f', 'tt2']:
             extra = horas - 12.50
+            if turno in ['tt2']:
+                extra = horas - 12
             if extra > 0 and extra >= TIEMPO_NO_EXTRA:
                 return extra
             return 0
@@ -787,6 +789,8 @@ class ProductionWorkHour(models.Model):
                         trabajo = 8
                 if ahora.turno in ['tt2', 't1f', 't2f', 't3f']:
                     tiempo_no_ocho = horas - 12.50
+                    if ahora.turno in ['tt2']:
+                        tiempo_no_ocho = horas - 12
                     if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
                         trabajo = horas
                     else:
@@ -1006,6 +1010,8 @@ class ProductionWorkHour(models.Model):
                         extra = tiempo_no_ocho
                 if ahora.turno in ['tt2', 't1f', 't2f', 't3f']:
                     tiempo_no_ocho = horas - 12.50
+                    if ahora.turno in ['tt2']:
+                        tiempo_no_ocho = horas - 12
                     if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
                         extra = tiempo_no_ocho
 
