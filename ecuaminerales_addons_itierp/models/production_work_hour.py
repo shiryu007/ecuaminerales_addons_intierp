@@ -553,7 +553,7 @@ class ProductionWorkHour(models.Model):
                 return extra
             return 0
         if turno in ['t1f', 't2f', 't3f', 'tt2']:
-            extra = horas - 12
+            extra = horas - 12.50
             if extra > 0 and extra >= TIEMPO_NO_EXTRA:
                 return extra
             return 0
@@ -786,7 +786,7 @@ class ProductionWorkHour(models.Model):
                     else:
                         trabajo = 8
                 if ahora.turno in ['tt2', 't1f', 't2f', 't3f']:
-                    tiempo_no_ocho = horas - 12
+                    tiempo_no_ocho = horas - 12.50
                     if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
                         trabajo = horas
                     else:
@@ -828,7 +828,7 @@ class ProductionWorkHour(models.Model):
                 sheet.write(fila, col, round(suplementaria, 2))
                 extraordinaria = 0
                 if ahora.turno in ['t1f', 't2f', 't3f'] or ahora.festivo or antes.festivo:
-                    ex = horas - 12
+                    ex = horas - 12.50
                     if ex <= 0:
                         extraordinaria += round(horas, 2)
                     elif ex >= TIEMPO_NO_EXTRA:
@@ -1032,7 +1032,7 @@ class ProductionWorkHour(models.Model):
                     else:
                         total_nocturnas += 7.5
                 if ahora.turno in ['t1f', 't2f', 't3f'] or ahora.festivo or antes.festivo:
-                    ex = horas - 12
+                    ex = horas - 12.50
                     if ex <= 0:
                         total_extraordinarias += round(horas, 2)
                     elif ex >= TIEMPO_NO_EXTRA:
