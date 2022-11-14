@@ -43,6 +43,19 @@ class ProductionWorkHour(models.Model):
     turnos_ocho_horas = fields.Html('8H00-17H00')
     turnos_seguido = fields.Html('6h00-14h00')
     file = fields.Binary('document')
+    festivo_start = fields.Datetime('Inicio Feriado')
+    festivo_end = fields.Datetime('Fin Feriado')
+
+    @api.multi
+    def insert_dias_festivos(self):
+        for employee_id in set(self.hour_production_ids.mapped('employee_id')):
+            list_hours = self.hour_production_ids.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
+            count = 1
+            for ahora in list_hours[1:]:
+                antes = list_hours[count - 1]
+                if ahora.fecha_time >= self.festivo_end and antes.fecha_time >= self.festivo_start:
+                    antes.festivo = True
+                    ahora.festivo = True
 
     def _compute_count_registers(self):
         self.register_count = len(self.hour_production_ids)

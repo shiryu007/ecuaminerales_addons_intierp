@@ -49,6 +49,12 @@
                         <group>
                             <field name="document" filename="file_name"/>
                             <field name="file_name" invisible="1"/>
+                            <newline/>
+                            <field name="festivo_start"/>
+                            <field name="festivo_end"/>
+                            <button name="insert_dias_festivos" type="object"
+                                    class="btn-text-style" string="Ingresar Dias Festivos"/>
+                            <newline/>
                         </group>
                         <group>
                             <field name="search_selection" widget="radio"/>
