@@ -52,6 +52,8 @@ class ProductionWorkHour(models.Model):
 
     @api.multi
     def insert_dias_festivos(self):
+        if not self.festivo_end or not self.festivo_start:
+            raise ValidationError("Ingrese Fechas de Inicio y Fin ")
         for employee_id in set(self.hour_production_ids.mapped('employee_id')):
             list_hours = self.hour_production_ids.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
             count = 1
