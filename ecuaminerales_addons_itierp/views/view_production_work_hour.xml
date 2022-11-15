@@ -55,6 +55,9 @@
                             <button name="insert_dias_festivos" type="object"
                                     class="btn-text-style" string="Ingresar Dias Festivos"/>
                             <newline/>
+                            <button name="delete_dias_festivos" type="object"
+                                    class="btn-text-style" string="Eliminar Festivos"/>
+                            <newline/>
                         </group>
                         <group>
                             <field name="search_selection" widget="radio"/>
