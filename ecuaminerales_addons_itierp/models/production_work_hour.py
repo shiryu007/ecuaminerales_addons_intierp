@@ -807,14 +807,14 @@ class ProductionWorkHour(models.Model):
                 col += 1
                 sheet.write(fila, col, trabajo)
                 nocturna = 0
-                if ahora.turno == 't2':
+                if ahora.turno == 't2' and not ahora.festivo:
                     f_aux = f_antes.replace(hour=19, minute=30, second=0)
                     horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
                     if 0 < horas_n - 2.5 >= TIEMPO_NO_EXTRA:
                         nocturna += round(horas_n, 2)
                     else:
                         nocturna += 2.5
-                if ahora.turno == 't3':
+                if ahora.turno == 't3' and not ahora.festivo:
                     f_aux = f_ahora.replace(hour=5, minute=30, second=0)
                     horas_n = (f_aux - f_antes).total_seconds() / 60 / 60
                     if 0 < horas_n - 7.5 >= TIEMPO_NO_EXTRA:
@@ -840,15 +840,18 @@ class ProductionWorkHour(models.Model):
                 sheet.write(fila, col, round(suplementaria, 2))
                 extraordinaria = 0
                 if ahora.turno in ['t1f', 't2f', 't3f'] or ahora.festivo or antes.festivo:
-                    ex = horas - 12.50
-                    if ex <= 0:
-                        extraordinaria += 11.50
-                    elif ex >= TIEMPO_NO_EXTRA:
-                        extraordinaria += round(horas - 0.50, 2)
+                    if ahora.festivo or antes.festivo:
+                        extraordinaria += trabajo
                     else:
-                        extraordinaria += 12
-                        if ahora.turno in ['tt2']:
-                            extraordinaria = 12
+                        ex = horas - 12.50
+                        if ex <= 0:
+                            extraordinaria += 11.50
+                        elif ex >= TIEMPO_NO_EXTRA:
+                            extraordinaria += round(horas - 0.50, 2)
+                        else:
+                            extraordinaria += 12
+                            if ahora.turno in ['tt2']:
+                                extraordinaria = 12
                 col += 1
                 sheet.write(fila, col, round(extraordinaria, 2))
                 fila += 1
