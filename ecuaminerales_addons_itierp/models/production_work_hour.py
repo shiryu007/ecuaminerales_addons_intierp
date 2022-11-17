@@ -945,7 +945,7 @@ class ProductionWorkHour(models.Model):
                     f_aux = f_antes.replace(hour=17, minute=0, second=0)
                 else:
                     f_aux = f_antes.replace(hour=14, minute=0, second=0)
-                horas_n = (f_aux - f_fin).total_seconds() / 60 / 60
+                horas_n = (f_fin - f_aux).total_seconds() / 60 / 60
                 if 0 < horas_n >= TIEMPO_NO_EXTRA:
                     if trabajo > 8:
                         suplementaria = round(horas_n, 2)
