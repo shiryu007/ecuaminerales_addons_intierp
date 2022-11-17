@@ -99,6 +99,17 @@
                                 <field name="turnos_seguido" readonly="1" force_save="1"/>
                             </div>
                         </page>
+                        <page string="Dias Festivos">
+
+                             <field name="hour_festivos_ids" readonly="1">
+                                 <tree editable="false" delete="false">
+                                     <field name="festivo_start"/>
+                                     <field name="festivo_end"/>
+
+                                 </tree>
+                             </field>
+
+                        </page>
                     </notebook>
                 </sheet>
             </form>

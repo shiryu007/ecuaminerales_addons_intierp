@@ -46,9 +46,12 @@ class ProductionWorkHour(models.Model):
     festivo_start = fields.Datetime('Inicio Feriado')
     festivo_end = fields.Datetime('Fin Feriado')
 
+    hour_festivos_ids = fields.One2many('production.work.hour.festivo', 'parent_id', 'Lista de dias festivos')
+
     @api.multi
     def delete_dias_festivos(self):
         self.hour_production_ids.write({'festivo': False})
+        self.hour_festivos_ids = False
 
     @api.multi
     def insert_dias_festivos(self):
@@ -59,10 +62,18 @@ class ProductionWorkHour(models.Model):
             count = 1
             for ahora in list_hours[1:]:
                 antes = list_hours[count - 1]
+                count = count + 1
                 if ahora.fecha_time <= self.festivo_end and antes.fecha_time >= self.festivo_start:
                     antes.festivo = True
                     ahora.festivo = True
 
+        festivo_line = self.env['production.work.hour.festivo'].create({
+            'parent_id':self.id,
+            'festivo_start': self.festivo_start,
+            'festivo_end': self.festivo_end})
+
+        self.festivo_start = False
+        self.festivo_end = False
     def _compute_count_registers(self):
         self.register_count = len(self.hour_production_ids)
 
@@ -1147,3 +1158,11 @@ class ProductionWorkHour(models.Model):
             'name': 'contract',
             'url': '/web/content/%s/%s/file/%s?download=true' % (self._name, self.id, name_report),
         }
+
+class FestivosCalculo(models.Model):
+    _name = 'production.work.hour.festivo'
+    _description = 'Dias festivos calculo'
+
+    parent_id = fields.Many2one('production.work.hour', string='Cabecera')
+    festivo_start = fields.Datetime('Inicio Feriado')
+    festivo_end = fields.Datetime('Fin Feriado')
