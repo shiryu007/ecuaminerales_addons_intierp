@@ -773,7 +773,6 @@ class ProductionWorkHour(models.Model):
 
         fila = 1
         for employee_id in list_data.mapped('employee_id').sorted('name'):
-            continue
             list_hours = list_data.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
             count = 1
             for ahora in list_hours[1:].sorted('fecha_time'):
@@ -991,89 +990,46 @@ class ProductionWorkHour(models.Model):
         col += 1
         sheet.set_column(col, col, 17)
         sheet.write(0, col, "EXTRAORDINARIAS", format_center)
-        col += 1
-        sheet.set_column(col, col, 17)
-        sheet.write(0, col, "EXTRAS", format_center)
         if not self.hour_production_ids:
             return True
-        list_data = self.hour_production_ids.filtered(lambda x: x.type_mar in ['exit', 'income'])
-        jornada = self.env.ref('ecuaminerales_addons_itierp.resource_rotativos')
-        list_data = list_data.filtered(lambda x: x.resource_calendar_id == jornada)
+
+        self.print_excel_report_resumen_del()
+        wb = xlrd.open_workbook(file_contents=base64.decodestring(self.file))
+        sheet_1 = wb.sheets()[0] if wb.sheets() else None
+        sheet_2 = wb.sheets()[1] if wb.sheets() else None
+        data_1 = [[sheet_1.cell_value(r, c) for c in range(sheet_1.ncols)] for r in range(sheet_1.nrows)]
+        data_2 = [[sheet_2.cell_value(r, c) for c in range(sheet_2.ncols)] for r in range(sheet_2.nrows)]
 
         fila = 1
+        list_data = self.hour_production_ids.filtered(lambda x: x.type_mar in ['exit', 'income'])
         for employee_id in list_data.mapped('employee_id').sorted('name'):
             col = 0
             sheet.write(fila, col, employee_id.display_name)
             col += 1
             sheet.write(fila, col, employee_id.resource_calendar_id.display_name)
             col += 1
-            list_hours = list_data.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
-            count = 1
+            data = list(filter(lambda x: x[0] == employee_id.display_name, data_1))
+            if not data:
+                data = list(filter(lambda x: x[0] == employee_id.display_name, data_2))
+
             total_horas_m = 0
             total_nocturnas = 0
             total_extraordinarias = 0
             total_suple = 0
-            total_extra = 0
-            for ahora in list_hours[1:].sorted('fecha_time'):
-                if ahora.type_mar == 'income':
-                    count += 1
-                    continue
-                antes = list_hours[count - 1]
+            if not data:
+                continue
+            for d in data:
+                if len(d) == 10:
+                    total_horas_m += d[6]
+                    total_nocturnas += d[7]
+                    total_suple += d[8]
+                    total_extraordinarias += d[9]
+                else:
+                    total_horas_m += d[5]
+                    total_nocturnas += d[6]
+                    total_suple += d[7]
+                    total_extraordinarias += d[8]
 
-                f_antes = antes.fecha_time - timedelta(hours=5)
-                f_ahora = ahora.fecha_time - timedelta(hours=5)
-                diferencia = f_ahora - f_antes
-                horas = diferencia.total_seconds() / 60 / 60
-                extra = 0
-                if ahora.turno in ['t1', 't2', 't3']:
-                    tiempo_no_ocho = horas - 8
-                    if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
-                        extra = tiempo_no_ocho
-                if ahora.turno in ['tt2', 't1f', 't2f', 't3f']:
-                    tiempo_no_ocho = horas - 12.50
-                    if ahora.turno in ['tt2']:
-                        tiempo_no_ocho = horas - 12
-                    if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
-                        extra = tiempo_no_ocho
-
-                if ahora.turno in ['t2']:
-                    if f_antes.hour <= 19 and f_ahora.hour >= 20:
-                        f_aux = f_antes.replace(hour=19, minute=30, second=0)
-                        horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
-                        if 0 < horas_n - 2.5 >= TIEMPO_NO_EXTRA:
-                            total_nocturnas += round(horas_n, 2)
-                        else:
-                            total_nocturnas += 2.5
-                if ahora.turno in ['tt2']:
-                    suple = horas - 8
-                    if 0 < suple - 4 >= TIEMPO_NO_EXTRA:
-                        total_suple += round(suple, 2)
-                    else:
-                        total_suple += 4
-
-                if ahora.turno in ['t3']:
-                    f_aux = f_ahora.replace(hour=5, minute=30, second=0)
-                    horas_n = (f_aux - f_antes).total_seconds() / 60 / 60
-                    if 0 < horas_n - 7.5 >= TIEMPO_NO_EXTRA:
-                        total_nocturnas += round(horas_n, 2)
-                    else:
-                        total_nocturnas += 7.5
-                if ahora.turno in ['t1f', 't2f', 't3f'] or ahora.festivo or antes.festivo:
-                    ex = horas - 12.50
-                    if ex <= 0:
-                        total_extraordinarias += round(horas, 2)
-                    elif ex >= TIEMPO_NO_EXTRA:
-                        total_extraordinarias += round(horas, 2)
-                    else:
-                        total_extraordinarias += 12
-                if extra > 0:
-                    if ahora.turno in ['t1']:
-                        f_aux = f_ahora.replace(hour=14, minute=0, second=0)
-                        total_suple += round((f_ahora - f_aux).total_seconds() / 60 / 60, 2)
-
-                total_horas_m += horas
-                total_extra += extra
-                count += 1
             sheet.write(fila, col, total_horas_m)
             col += 1
             sheet.write(fila, col, total_nocturnas)
@@ -1082,66 +1038,8 @@ class ProductionWorkHour(models.Model):
             col += 1
             sheet.write(fila, col, total_extraordinarias)
             col += 1
-            sheet.write(fila, col, total_extra)
-            col += 1
             fila += 1
 
-        data_filter = self._get_data_filter()
-        data_filter |= self._get_data_filter_seguido()
-        data_filter = data_filter.filtered(lambda x: x.type_mar in ['exit', 'income'])
-        days = self._get_days_header(data_filter)
-        for employee_id in data_filter.mapped('employee_id').sorted('name'):
-            col = 0
-            sheet.write(fila, col, employee_id.display_name)
-            col += 1
-            sheet.write(fila, col, employee_id.resource_calendar_id.display_name)
-            col += 1
-            list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
-            total_horas_m = 0
-            total_nocturnas = 0
-            total_extraordinarias = 0
-            total_suple = 0
-            total_extra = 0
-            for day in days:
-                horas = list_hours.filtered(
-                    lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
-                if not horas:
-                    continue
-                if len(horas) == 4:
-                    h1 = horas[1].fecha_time - horas[0].fecha_time
-                    h1 += horas[3].fecha_time - horas[2].fecha_time
-                    h, extra = self.get_horas_extras_hora(h1)
-                    total_horas_m += h
-                    total_extra += int(h)
-                    if day.weekday() in [calendar.SATURDAY, calendar.SUNDAY] or horas.filtered('festivo'):
-                        total_extraordinarias += int(h)
-                    if int(extra) > 2:
-                        total_nocturnas += int(extra) - 2
-                    if 0 < int(extra) <= 2:
-                        total_suple += int(extra)
-                elif len(horas) == 2:
-                    h1 = (horas[1].fecha_time - timedelta(hours=5)) - (horas[0].fecha_time - timedelta(hours=5))
-                    h, extra = self.get_horas_extras_hora(h1)
-                    total_horas_m += h
-                    total_extra += int(extra)
-                    total_extra += int(extra)
-                    if day.weekday() in [calendar.SATURDAY, calendar.SUNDAY] or horas.filtered('festivo'):
-                        total_extraordinarias += int(h)
-                    if int(extra) > 2:
-                        total_nocturnas += int(extra) - 2
-                    if 0 < int(extra) <= 2:
-                        total_suple += int(extra)
-            sheet.write(fila, col, total_horas_m)
-            col += 1
-            sheet.write(fila, col, total_nocturnas)
-            col += 1
-            sheet.write(fila, col, total_suple)
-            col += 1
-            sheet.write(fila, col, total_extraordinarias)
-            col += 1
-            sheet.write(fila, col, total_extra)
-            col += 1
-            fila += 1
         return self.return_exel_report(fp, workbook)
 
     def return_exel_report(self, fp, workbook):
