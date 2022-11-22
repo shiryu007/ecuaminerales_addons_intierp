@@ -68,12 +68,13 @@ class ProductionWorkHour(models.Model):
                     ahora.festivo = True
 
         festivo_line = self.env['production.work.hour.festivo'].create({
-            'parent_id':self.id,
+            'parent_id': self.id,
             'festivo_start': self.festivo_start,
             'festivo_end': self.festivo_end})
 
         self.festivo_start = False
         self.festivo_end = False
+
     def _compute_count_registers(self):
         self.register_count = len(self.hour_production_ids)
 
@@ -1158,6 +1159,7 @@ class ProductionWorkHour(models.Model):
             'name': 'contract',
             'url': '/web/content/%s/%s/file/%s?download=true' % (self._name, self.id, name_report),
         }
+
 
 class FestivosCalculo(models.Model):
     _name = 'production.work.hour.festivo'
