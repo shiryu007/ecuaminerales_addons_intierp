@@ -773,6 +773,8 @@ class ProductionWorkHour(models.Model):
 
         fila = 1
         for employee_id in list_data.mapped('employee_id').sorted('name'):
+            if employee_id.id == 378:
+                print('aqui')
             list_hours = list_data.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
             count = 1
             for ahora in list_hours[1:].sorted('fecha_time'):
@@ -805,15 +807,19 @@ class ProductionWorkHour(models.Model):
                     else:
                         trabajo = 8
                 if ahora.turno in ['tt2', 't1f', 't2f', 't3f']:
-                    tiempo_no_ocho = horas - 12.50
-                    if ahora.turno in ['tt2']:
-                        tiempo_no_ocho = horas - 12
-                    if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
-                        trabajo = horas
-                    else:
-                        trabajo = 11.5
-                        if ahora.turno in ['tt2']:
-                            trabajo = 12
+                    #todas las horas extraordinarias se pagan
+                    trabajo = horas
+                    if horas > 6:
+                        trabajo = horas - 0.5
+                    # tiempo_no_ocho = horas - 8
+                    # if ahora.turno in ['tt2']:
+                    #     tiempo_no_ocho = horas - 8
+                    # if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
+                    #     trabajo = horas
+                    # else:
+                    #     trabajo = 11.5
+                    #     if ahora.turno in ['tt2']:
+                    #         trabajo = 12
                 trabajo = round(trabajo, 2)
                 col += 1
                 sheet.write(fila, col, trabajo)
@@ -854,15 +860,16 @@ class ProductionWorkHour(models.Model):
                     if ahora.festivo or antes.festivo:
                         extraordinaria += trabajo
                     else:
-                        ex = horas - 12.50
-                        if ex <= 0:
-                            extraordinaria += 11.50
-                        elif ex >= TIEMPO_NO_EXTRA:
-                            extraordinaria += round(horas - 0.50, 2)
-                        else:
-                            extraordinaria += 12
-                            if ahora.turno in ['tt2']:
-                                extraordinaria = 12
+                        extraordinaria += round(horas - 0.50, 2)
+                        # ex = horas - 12.50
+                        # if ex <= 0:
+                        #     extraordinaria += 11.50
+                        # elif ex >= TIEMPO_NO_EXTRA:
+                        #     extraordinaria += round(horas - 0.50, 2)
+                        # else:
+                        #     extraordinaria += 12
+                        #     if ahora.turno in ['tt2']:
+                        #         extraordinaria = 12
                 col += 1
                 sheet.write(fila, col, round(extraordinaria, 2))
                 fila += 1
