@@ -64,7 +64,7 @@ class ProductionWorkHour(models.Model):
                 antes = list_hours[count - 1]
                 count = count + 1
                 if ahora.fecha_time <= self.festivo_end and antes.fecha_time >= self.festivo_start:
-                    antes.festivo = True
+                    antes.festivo = False
                     ahora.festivo = True
 
         festivo_line = self.env['production.work.hour.festivo'].create({
