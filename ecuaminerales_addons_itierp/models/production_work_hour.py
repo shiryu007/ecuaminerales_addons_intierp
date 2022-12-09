@@ -55,6 +55,8 @@ class ProductionWorkHour(models.Model):
 
     @api.multi
     def insert_dias_festivos(self):
+        if self.state == 'draft':
+            raise ValidationError("Por favor cargue los datos antes de ingresar el feriado ")
         if not self.festivo_end or not self.festivo_start:
             raise ValidationError("Ingrese Fechas de Inicio y Fin ")
         for employee_id in set(self.hour_production_ids.mapped('employee_id')):
@@ -64,7 +66,7 @@ class ProductionWorkHour(models.Model):
                 antes = list_hours[count - 1]
                 count = count + 1
                 if ahora.fecha_time <= self.festivo_end and antes.fecha_time >= self.festivo_start:
-                    antes.festivo = False
+                    antes.festivo = True
                     ahora.festivo = True
 
         festivo_line = self.env['production.work.hour.festivo'].create({
@@ -856,7 +858,7 @@ class ProductionWorkHour(models.Model):
                 col += 1
                 sheet.write(fila, col, round(suplementaria, 2))
                 extraordinaria = 0
-                if ahora.turno in ['t1f', 't2f', 't3f'] or ahora.festivo or antes.festivo:
+                if ahora.turno in ['t1f', 't2f', 't3f'] or (ahora.festivo and antes.festivo):
                     if ahora.festivo or antes.festivo:
                         extraordinaria += trabajo
                     else:
