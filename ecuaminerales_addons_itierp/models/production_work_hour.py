@@ -215,6 +215,7 @@ class ProductionWorkHour(models.Model):
     def detectar_ingreso_salida(self, antes, ahora, minutes):
         f_antes = antes.fecha_time - timedelta(hours=5)
         f_ahora = ahora.fecha_time - timedelta(hours=5)
+
         if antes.turno != 'no':
             return True
         # TURNO ROTATIVOS
@@ -263,17 +264,25 @@ class ProductionWorkHour(models.Model):
                     ahora.turno = 't1f'
                     return True
 
-            if f_antes.weekday() in [calendar.SATURDAY]:
+            if f_antes.weekday() in [calendar.SATURDAY]: #aqui
                 if 15 <= f_antes.hour <= 19 and f_ahora.hour <= 8:
-                    antes.type_mar = 'income'
-                    ahora.type_mar = 'exit'
+                    if (minutes / 60) > 14:
+                        antes.type_mar = 'old'
+                        ahora.type_mar = 'old'
+                    else:
+                        antes.type_mar = 'income'
+                        ahora.type_mar = 'exit'
                     antes.turno = 't2f'
                     ahora.turno = 't2f'
                     return True
             if f_antes.weekday() in [calendar.SUNDAY]:
                 if 15 <= f_antes.hour <= 19 and f_ahora.hour <= 8:
-                    antes.type_mar = 'income'
-                    ahora.type_mar = 'exit'
+                    if (minutes / 60) > 14:
+                        antes.type_mar = 'old'
+                        ahora.type_mar = 'old'
+                    else:
+                        antes.type_mar = 'income'
+                        ahora.type_mar = 'exit'
                     antes.turno = 't3f'
                     ahora.turno = 't3f'
                     return True
@@ -292,13 +301,24 @@ class ProductionWorkHour(models.Model):
                 antes.turno = 'late'
                 ahora.turno = 'late'
                 return True
-            if 5 <= f_antes.hour <= 8 and f_ahora.hour >= 16:
+            if 5 <= f_antes.hour <= 16 and f_ahora.hour >= 17:
                 antes.type_mar = 'income'
                 ahora.type_mar = 'exit'
                 antes.turno = 'morning'
                 ahora.turno = 'late'
                 return True
-            if (minutes / 60) > 9:
+            if f_antes.weekday() in [calendar.SATURDAY, calendar.SUNDAY]:
+                antes.type_mar = 'income'
+                ahora.type_mar = 'exit'
+                if 12 <= f_antes.hour <= 23:
+                    antes.turno = 'late'
+                else:
+                    antes.turno = 'morning'
+                if 00 <= f_ahora.hour <= 11:
+                    ahora.turno = 'morning'
+                else:
+                    ahora.turno = 'late'
+            if (minutes / 60) > 14:
                 if 15 <= antes.hour >= 16:
                     antes.turno = 'late'
                 if 5 <= antes.hour >= 9:
@@ -804,10 +824,12 @@ class ProductionWorkHour(models.Model):
                 extra = 0
                 if ahora.turno in ['t1', 't2', 't3']:
                     tiempo_no_ocho = horas - 8
-                    if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
-                        trabajo = horas
-                    else:
-                        trabajo = 8
+                    # if 0 <= tiempo_no_ocho >= TIEMPO_NO_EXTRA:
+                    #     trabajo = horas
+                    # else:
+                    #     trabajo = 8
+
+                    trabajo =  round(trabajo, 0)
                 if ahora.turno in ['tt2', 't1f', 't2f', 't3f']:
                     #todas las horas extraordinarias se pagan
                     trabajo = horas
@@ -828,18 +850,32 @@ class ProductionWorkHour(models.Model):
                 nocturna = 0
                 if ahora.turno == 't2' and not ahora.festivo:
                     f_aux = f_antes.replace(hour=19, minute=30, second=0)
-                    horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
-                    if 0 < horas_n - 2.5 >= TIEMPO_NO_EXTRA:
-                        nocturna += round(horas_n, 2)
-                    else:
-                        nocturna += 2.5
+                    if f_ahora > f_aux:
+                        horas_n = (f_ahora - f_aux).total_seconds() / 60 / 60
+
+                        if 0 < horas_n - 2.5 >= TIEMPO_NO_EXTRA:
+                            nocturna += round(horas_n, 2)
+                        else:
+                            if 0 < horas_n > 2.5:
+                                nocturna += 2.5
+                            else:
+                                nocturna += round(horas_n, 2)
                 if ahora.turno == 't3' and not ahora.festivo:
                     f_aux = f_ahora.replace(hour=5, minute=30, second=0)
-                    horas_n = (f_aux - f_antes).total_seconds() / 60 / 60
-                    if 0 < horas_n - 7.5 >= TIEMPO_NO_EXTRA:
-                        nocturna += round(horas_n, 2)
-                    else:
-                        nocturna += 7.5
+                    #cuando sale antes de las 6 de la manana
+                    if f_ahora < f_aux:
+                        # restar media hora de almuerzo
+                        f_aux = f_ahora - timedelta(hours=0.5)
+
+                    if f_aux > f_antes:
+                        horas_n = (f_aux - f_antes).total_seconds() / 60 / 60
+                        if 0 < horas_n - 7.5 >= TIEMPO_NO_EXTRA:
+                            nocturna += round(horas_n, 2)
+                        else:
+                            if horas_n > 7.5:
+                                nocturna += 7.5
+                            else:
+                                nocturna += round(horas_n, 2)
                 col += 1
                 sheet.write(fila, col, round(nocturna, 2))
                 suplementaria = 0
@@ -914,10 +950,18 @@ class ProductionWorkHour(models.Model):
         fila = 1
         for employee_id in data_filter.mapped('employee_id').sorted('name'):
             list_hours = data_filter.filtered(lambda x: x.employee_id == employee_id).sorted('fecha_time')
-            for day in days:
+            for i in range(len(days)):
+            # for day in days:
+                day = days[i]
                 horas = list_hours.filtered(
                     lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
                 if not horas or len(horas) == 1:
+                    if day.weekday() in [calendar.SATURDAY, calendar.SUNDAY] :
+                        day2 = days[i+1]
+                        horas = list_hours.filtered(
+                            lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m')
+                        or (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day2.strftime('%d-%m'))
+                if not horas or len(horas) == 1 or len(horas)>2:
                     continue
                 horas.sorted('fecha_time')
                 f_antes = horas[0].fecha_time - timedelta(hours=5)
