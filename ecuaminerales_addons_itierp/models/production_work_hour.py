@@ -957,7 +957,10 @@ class ProductionWorkHour(models.Model):
                     lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m'))
                 if not horas or len(horas) == 1:
                     if day.weekday() in [calendar.SATURDAY, calendar.SUNDAY] :
-                        day2 = days[i+1]
+                        if i + 1 == len(days):
+                            day2 = days[i]
+                        else:
+                            day2 = days[i+1]
                         horas = list_hours.filtered(
                             lambda x: (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day.strftime('%d-%m')
                         or (x.fecha_time - timedelta(hours=5)).strftime('%d-%m') == day2.strftime('%d-%m'))
